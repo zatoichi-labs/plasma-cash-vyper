@@ -8,6 +8,7 @@ contract ERC721:
 Deposit: event({tokenId: uint256, owner: address, txnHash: bytes32})
 ExitStarted: event({tokenId: uint256, owner: address})
 ExitFinished: event({tokenId: uint256, owner: address})
+
 # Challenge Events
 ExitCancelled: event({tokenId: uint256, challenger: address})
 ChallengeStarted: event({tokenId: uint256, blkNum: uint256})
@@ -57,7 +58,6 @@ challenges: { # struct Challenge
     },
     challenger: address
 }[uint256][uint256]  # tokenId => txnBlkNum => Challenge
-
 
 empty_merkle_branch: bytes32[256]
 
@@ -125,8 +125,8 @@ def deposit(
     txnHash: bytes32 = keccak256(
             concat(
                     convert(txn_prevBlkNum, bytes32),
-                    convert(txn_tokenId, bytes32),
-                    convert(txn_newOwner, bytes32)
+                    convert(txn_tokenId,    bytes32),
+                    convert(txn_newOwner,   bytes32)
                 )
             )
     # Allow depositor to withdraw their current token (No other spends happen)
@@ -143,7 +143,7 @@ def onERC721Received(
         operator: address,
         _from: address,
         _tokenId: uint256,
-        data: bytes[1024]
+        data: bytes[150]
     ) -> bytes32:
 
     # Sanity check that the token contract is depositing
@@ -153,11 +153,15 @@ def onERC721Received(
     self.deposit(
             _from,
             _tokenId,
-            convert(slice(data, start=0,   len=32), uint256),
-            convert(slice(data, start=32,  len=32), uint256),
-            convert(slice(data, start=64,  len=20), address),
-            convert(slice(data, start=84,  len=2),  uint256),
-            convert(slice(data, start=86,  len=32), bytes32),
+            # Double convert is workaround for #1072
+            convert(convert(slice(data, start=  0, len=32), bytes32), uint256),
+            # Double convert is workaround for #1072
+            convert(convert(slice(data, start= 32, len=32), bytes32), uint256),
+            # Convert to address doesn't work, #1074
+            convert(slice(data, start= 64, len=20), address),
+            # Double convert is workaround for #1072
+            convert(convert(slice(data, start= 84, len= 2), bytes32), uint256),
+            convert(slice(data, start= 86, len=32), bytes32),
             convert(slice(data, start=118, len=32), bytes32)
         )
 
