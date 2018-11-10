@@ -289,7 +289,8 @@ def challengeExit(
     # Challenge transaction was double spent between the parent and the exit
     challengeBetween: bool = (txnBlkNum <= self.exits[txn_tokenId].txn.prevBlkNum) and \
             (txnBlkNum > self.exits[txn_tokenId].prevTxn.prevBlkNum)
-    challengeBetween = challengeBetween and \  # Waiting on #1075 to combine with ^
+    # Waiting on #1075 to combine with ^
+    challengeBetween = challengeBetween and \
             (self.exits[txn_tokenId].prevTxn.newOwner == txn_signer)
 
     # Challenge transaction is prior to parent, which is potentially forged history
