@@ -50,8 +50,8 @@ challenges: { # struct Challenge
         tokenId: uint256,
         newOwner: address,
         sigV: uint256,
-        sigR: bytes32,
-        sigS: bytes32
+        sigR: uint256,
+        sigS: uint256
     },
     challenger: address
 }[uint256][uint256]  # tokenId => txnBlkNum => Challenge
@@ -245,6 +245,190 @@ def startExit(
     self.exits[prevTxn_tokenId].numChallenges = 0
     self.exits[prevTxn_tokenId].owner = msg.sender
 
-#def challengeExit()
-#def respondChallengeExit()
-#def finalizeExit()
+    # Announce the exit!
+    log.ExitStarted(txn_tokenId, msg.sender)
+
+@public
+def challengeExit(
+    # Expansion of transaction struct
+    txn_prevBlkNum: uint256,
+    txn_tokenId: uint256,
+    txn_newOwner: address,
+    txn_sigV: uint256,
+    txn_sigR: uint256,
+    txn_sigS: uint256,
+    txnProof: bytes32[256],
+    txnBlkNum: uint256
+):
+    # Validate the exit has already been started
+    assert self.exits[txn_tokenId].time != 0
+
+    # Double-check that they are dealing with the same tokenId
+    assert self.exits[txn_tokenId].txn.tokenId == txn_tokenId
+
+    # Compute transaction hash (leaf of Merkle tree)
+    txnHash: bytes32 = keccak256(
+            concat(
+                    convert(txn_prevBlkNum, bytes32),
+                    convert(txn_tokenId,    bytes32),
+                    convert(txn_newOwner,   bytes32)
+                )
+            )
+
+    # Validate inclusion of txn in merkle root at challenge
+    assert self.childChain[txnBlkNum] == \
+            self._getMerkleRoot(txnHash, txn_tokenId, txnProof)
+
+    # Get signer of challenge txn
+    txn_signer: address = ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
+
+    # Challenge transaction was spent after the exit
+    challengeAfter: bool = (txnBlkNum > self.exits[txn_tokenId].txnBlkNum) and \
+            (self.exits[txn_tokenId].txn.newOwner == txn_signer)
+
+    # Challenge transaction was double spent between the parent and the exit
+    challengeBetween: bool = (txnBlkNum <= self.exits[txn_tokenId].txn.prevBlkNum) and \
+            (txnBlkNum > self.exits[txn_tokenId].prevTxn.prevBlkNum)
+    challengeBetween = challengeBetween and \
+            (self.exits[txn_tokenId].prevTxn.newOwner == txn_signer)
+
+    # Challenge transaction is prior to parent, which is potentially forged history
+    challengeBefore: bool = (txnBlkNum <= self.exits[txn_tokenId].prevTxn.prevBlkNum)
+
+    if (challengeAfter or challengeBetween):
+        # Cancel the exit!
+        #   struct Exit
+        self.exits[txn_tokenId].time = 0
+        self.exits[txn_tokenId].txnBlkNum = 0
+        #       struct Transaction
+        self.exits[txn_tokenId].txn.prevBlkNum = 0
+        self.exits[txn_tokenId].txn.tokenId = 0
+        self.exits[txn_tokenId].txn.newOwner = ZERO_ADDRESS
+        self.exits[txn_tokenId].txn.sigV = 0
+        self.exits[txn_tokenId].txn.sigR = 0
+        self.exits[txn_tokenId].txn.sigS = 0
+        #       struct Transaction
+        self.exits[txn_tokenId].prevTxn.prevBlkNum = 0
+        self.exits[txn_tokenId].prevTxn.tokenId = 0
+        self.exits[txn_tokenId].prevTxn.newOwner = ZERO_ADDRESS
+        self.exits[txn_tokenId].prevTxn.sigV = 0
+        self.exits[txn_tokenId].prevTxn.sigR = 0
+        self.exits[txn_tokenId].prevTxn.sigS = 0
+        self.exits[txn_tokenId].numChallenges = 0
+        self.exits[txn_tokenId].owner = ZERO_ADDRESS
+
+        # Announce the exit was cancelled
+        log.ExitCancelled(txn_tokenId, msg.sender)
+    elif challengeBefore:
+        # Log a new challenge!
+        #   struct Challenge
+        #       struct Transaction
+        self.challenges[txn_tokenId][txnBlkNum].txn.prevBlkNum = txn_prevBlkNum
+        self.challenges[txn_tokenId][txnBlkNum].txn.tokenId = txn_tokenId
+        self.challenges[txn_tokenId][txnBlkNum].txn.newOwner = txn_newOwner
+        self.challenges[txn_tokenId][txnBlkNum].txn.sigV = txn_sigV
+        self.challenges[txn_tokenId][txnBlkNum].txn.sigR = txn_sigR
+        self.challenges[txn_tokenId][txnBlkNum].txn.sigS = txn_sigS
+        self.challenges[txn_tokenId][txnBlkNum].challenger = msg.sender
+        
+        # Don't forget to increment the challenge counter!
+        self.exits[txn_tokenId].numChallenges += 1
+
+        # Announce the challenge!
+        log.ChallengeStarted(txn_tokenId, txnBlkNum)
+    
+@public
+def respondChallengeExit(
+    # Expansion of transaction struct
+    txn_prevBlkNum: uint256,
+    txn_tokenId: uint256,
+    txn_newOwner: address,
+    txn_sigV: uint256,
+    txn_sigR: uint256,
+    txn_sigS: uint256,
+    txnProof: bytes32[256],
+    txnBlkNum: uint256
+):
+    # Double-check that they are dealing with the same tokenId
+    assert self.challenges[txn_tokenId][txn_prevBlkNum].txn.tokenId == txn_tokenId
+
+    # Validate that the response is after the challenge
+    assert self.challenges[txn_tokenId][txn_prevBlkNum].txn.prevBlkNum < txn_prevBlkNum
+
+    # Compute transaction hash (leaf of Merkle tree)
+    txnHash: bytes32 = keccak256(
+            concat(
+                    convert(txn_prevBlkNum, bytes32),
+                    convert(txn_tokenId,    bytes32),
+                    convert(txn_newOwner,   bytes32)
+                )
+            )
+
+    # Validate inclusion of txn in merkle root at response
+    assert self.childChain[txnBlkNum] == \
+            self._getMerkleRoot(txnHash, txn_tokenId, txnProof)
+
+    # Get signer of response txn
+    txn_signer: address = ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
+
+    # Validate signer of response txn is the recipient of the challenge txn
+    assert self.challenges[txn_tokenId][txn_prevBlkNum].txn.newOwner == txn_signer
+
+    # Remove the challenge
+    #   struct Challenge
+    #       struct Transaction
+    self.challenges[txn_tokenId][txnBlkNum].txn.prevBlkNum = 0
+    self.challenges[txn_tokenId][txnBlkNum].txn.tokenId = 0
+    self.challenges[txn_tokenId][txnBlkNum].txn.newOwner = ZERO_ADDRESS
+    self.challenges[txn_tokenId][txnBlkNum].txn.sigV = 0
+    self.challenges[txn_tokenId][txnBlkNum].txn.sigR = 0
+    self.challenges[txn_tokenId][txnBlkNum].txn.sigS = 0
+    self.challenges[txn_tokenId][txnBlkNum].challenger = ZERO_ADDRESS
+    
+    # Don't forget to increment the challenge counter!
+    self.exits[txn_tokenId].numChallenges -= 1
+
+    # Announce the challenge!
+    log.ChallengeCancelled(txn_tokenId, txnBlkNum)
+
+@public
+def finalizeExit(tokenId: uint256):
+    # Validate the exit has already been started
+    assert self.exits[tokenId].time != 0
+
+    # Validate the challenge period is over
+    assert block.timestamp > self.exits[tokenId].time + CHALLENGE_PERIOD
+
+    if self.exits[tokenId].numChallenges > 0:
+        # Cancel the exit!
+        #   struct Exit
+        self.exits[tokenId].time = 0
+        self.exits[tokenId].txnBlkNum = 0
+        #       struct Transaction
+        self.exits[tokenId].txn.prevBlkNum = 0
+        self.exits[tokenId].txn.tokenId = 0
+        self.exits[tokenId].txn.newOwner = ZERO_ADDRESS
+        self.exits[tokenId].txn.sigV = 0
+        self.exits[tokenId].txn.sigR = 0
+        self.exits[tokenId].txn.sigS = 0
+        #       struct Transaction
+        self.exits[tokenId].prevTxn.prevBlkNum = 0
+        self.exits[tokenId].prevTxn.tokenId = 0
+        self.exits[tokenId].prevTxn.newOwner = ZERO_ADDRESS
+        self.exits[tokenId].prevTxn.sigV = 0
+        self.exits[tokenId].prevTxn.sigR = 0
+        self.exits[tokenId].prevTxn.sigS = 0
+        self.exits[tokenId].numChallenges = 0
+        self.exits[tokenId].owner = ZERO_ADDRESS
+
+        # Announce the exit was cancelled
+        log.ExitCancelled(tokenId, msg.sender)
+    else:
+        # Validate the caller is the owner
+        assert self.exits[tokenId].owner == msg.sender
+
+        # Withdraw the token!
+        self.token.safeTransferFrom(self, msg.sender, tokenId)
+
+        # Announce the exit was cancelled
+        log.ExitFinished(tokenId, msg.sender)
