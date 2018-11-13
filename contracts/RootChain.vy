@@ -19,7 +19,7 @@ ChallengeCancelled: event({tokenId: uint256, blkNum: uint256})
 authority: address
 token: public(ERC721)
 childChain: bytes32[uint256]
-childChain_len: uint256 # Simulates stack data structure
+childChain_len: public(uint256) # Simulates stack data structure
 
 exits: { # struct Exit
     time: timestamp,
