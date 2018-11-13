@@ -1,3 +1,4 @@
+pytest
 pytest-ethereum
 web3
 vyper
