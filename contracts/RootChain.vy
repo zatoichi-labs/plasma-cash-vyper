@@ -226,24 +226,28 @@ def startExit(
 
     # Start the exit!
     #   struct Exit
-    self.exits[txn_tokenId].time = block.timestamp
-    self.exits[txn_tokenId].txnBlkNum = txnBlkNum
-    #       struct Transaction
-    self.exits[txn_tokenId].txn.prevBlkNum = txn_prevBlkNum
-    self.exits[txn_tokenId].txn.tokenId = txn_tokenId
-    self.exits[txn_tokenId].txn.newOwner = txn_newOwner
-    self.exits[txn_tokenId].txn.sigV = txn_sigV
-    self.exits[txn_tokenId].txn.sigR = txn_sigR
-    self.exits[txn_tokenId].txn.sigS = txn_sigS
-    #       struct Transaction
-    self.exits[prevTxn_tokenId].prevTxn.prevBlkNum = prevTxn_prevBlkNum
-    self.exits[prevTxn_tokenId].prevTxn.tokenId = prevTxn_tokenId
-    self.exits[prevTxn_tokenId].prevTxn.newOwner = prevTxn_newOwner
-    self.exits[prevTxn_tokenId].prevTxn.sigV = prevTxn_sigV
-    self.exits[prevTxn_tokenId].prevTxn.sigR = prevTxn_sigR
-    self.exits[prevTxn_tokenId].prevTxn.sigS = prevTxn_sigS
-    self.exits[prevTxn_tokenId].numChallenges = 0
-    self.exits[prevTxn_tokenId].owner = msg.sender
+    self.exits[txn_tokenId] = {
+        time: block.timestamp,
+        txnBlkNum: txnBlkNum,
+        txn: {
+            prevBlkNum: txn_prevBlkNum,
+            tokenId: txn_tokenId,
+            newOwner: txn_newOwner,
+            sigV: txn_sigV,
+            sigR: txn_sigR,
+            sigS: txn_sigS
+        },
+        prevTxn: {
+            prevBlkNum: prevTxn_prevBlkNum,
+            tokenId: prevTxn_tokenId,
+            newOwner: prevTxn_newOwner,
+            sigV: prevTxn_sigV,
+            sigR: prevTxn_sigR,
+            sigS: prevTxn_sigS
+        },
+        numChallenges: 0,
+        owner: msg.sender
+    }
 
     # Announce the exit!
     log.ExitStarted(txn_tokenId, msg.sender)
@@ -304,15 +308,17 @@ def challengeExit(
         log.ExitCancelled(txn_tokenId, msg.sender)
     elif challengeBefore:
         # Log a new challenge!
-        #   struct Challenge
-        #       struct Transaction
-        self.challenges[txn_tokenId][txnBlkNum].txn.prevBlkNum = txn_prevBlkNum
-        self.challenges[txn_tokenId][txnBlkNum].txn.tokenId = txn_tokenId
-        self.challenges[txn_tokenId][txnBlkNum].txn.newOwner = txn_newOwner
-        self.challenges[txn_tokenId][txnBlkNum].txn.sigV = txn_sigV
-        self.challenges[txn_tokenId][txnBlkNum].txn.sigR = txn_sigR
-        self.challenges[txn_tokenId][txnBlkNum].txn.sigS = txn_sigS
-        self.challenges[txn_tokenId][txnBlkNum].challenger = msg.sender
+        self.challenges[txn_tokenId][txnBlkNum] = {
+            txn: {
+                prevBlkNum: txn_prevBlkNum,
+                tokenId: txn_tokenId,
+                newOwner: txn_newOwner,
+                sigV: txn_sigV,
+                sigR: txn_sigR,
+                sigS: txn_sigS
+            },
+            challenger: msg.sender
+        }
         
         # Don't forget to increment the challenge counter!
         self.exits[txn_tokenId].numChallenges += 1
