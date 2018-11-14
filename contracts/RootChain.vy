@@ -298,25 +298,7 @@ def challengeExit(
 
     if (challengeAfter or challengeBetween):
         # Cancel the exit!
-        #   struct Exit
-        self.exits[txn_tokenId].time = 0
-        self.exits[txn_tokenId].txnBlkNum = 0
-        #       struct Transaction
-        self.exits[txn_tokenId].txn.prevBlkNum = 0
-        self.exits[txn_tokenId].txn.tokenId = 0
-        self.exits[txn_tokenId].txn.newOwner = ZERO_ADDRESS
-        self.exits[txn_tokenId].txn.sigV = 0
-        self.exits[txn_tokenId].txn.sigR = 0
-        self.exits[txn_tokenId].txn.sigS = 0
-        #       struct Transaction
-        self.exits[txn_tokenId].prevTxn.prevBlkNum = 0
-        self.exits[txn_tokenId].prevTxn.tokenId = 0
-        self.exits[txn_tokenId].prevTxn.newOwner = ZERO_ADDRESS
-        self.exits[txn_tokenId].prevTxn.sigV = 0
-        self.exits[txn_tokenId].prevTxn.sigR = 0
-        self.exits[txn_tokenId].prevTxn.sigS = 0
-        self.exits[txn_tokenId].numChallenges = 0
-        self.exits[txn_tokenId].owner = ZERO_ADDRESS
+        del self.exits[txn_tokenId]
 
         # Announce the exit was cancelled
         log.ExitCancelled(txn_tokenId, msg.sender)
@@ -376,15 +358,7 @@ def respondChallengeExit(
     assert self.challenges[txn_tokenId][txn_prevBlkNum].txn.newOwner == txn_signer
 
     # Remove the challenge
-    #   struct Challenge
-    #       struct Transaction
-    self.challenges[txn_tokenId][txnBlkNum].txn.prevBlkNum = 0
-    self.challenges[txn_tokenId][txnBlkNum].txn.tokenId = 0
-    self.challenges[txn_tokenId][txnBlkNum].txn.newOwner = ZERO_ADDRESS
-    self.challenges[txn_tokenId][txnBlkNum].txn.sigV = 0
-    self.challenges[txn_tokenId][txnBlkNum].txn.sigR = 0
-    self.challenges[txn_tokenId][txnBlkNum].txn.sigS = 0
-    self.challenges[txn_tokenId][txnBlkNum].challenger = ZERO_ADDRESS
+    del self.challenges[txn_tokenId][txnBlkNum]
     
     # Don't forget to increment the challenge counter!
     self.exits[txn_tokenId].numChallenges -= 1
@@ -402,25 +376,7 @@ def finalizeExit(tokenId: uint256):
 
     if self.exits[tokenId].numChallenges > 0:
         # Cancel the exit!
-        #   struct Exit
-        self.exits[tokenId].time = 0
-        self.exits[tokenId].txnBlkNum = 0
-        #       struct Transaction
-        self.exits[tokenId].txn.prevBlkNum = 0
-        self.exits[tokenId].txn.tokenId = 0
-        self.exits[tokenId].txn.newOwner = ZERO_ADDRESS
-        self.exits[tokenId].txn.sigV = 0
-        self.exits[tokenId].txn.sigR = 0
-        self.exits[tokenId].txn.sigS = 0
-        #       struct Transaction
-        self.exits[tokenId].prevTxn.prevBlkNum = 0
-        self.exits[tokenId].prevTxn.tokenId = 0
-        self.exits[tokenId].prevTxn.newOwner = ZERO_ADDRESS
-        self.exits[tokenId].prevTxn.sigV = 0
-        self.exits[tokenId].prevTxn.sigR = 0
-        self.exits[tokenId].prevTxn.sigS = 0
-        self.exits[tokenId].numChallenges = 0
-        self.exits[tokenId].owner = ZERO_ADDRESS
+        del self.exits[tokenId]
 
         # Announce the exit was cancelled
         log.ExitCancelled(tokenId, msg.sender)
