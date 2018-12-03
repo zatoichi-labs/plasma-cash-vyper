@@ -154,8 +154,8 @@ def onERC721Received(
             convert(convert(slice(data, start=  0, len=32), bytes32), uint256),
             # Double convert is workaround for #1072
             convert(convert(slice(data, start= 32, len=32), bytes32), uint256),
-            # Convert to address doesn't work, #1074
-            convert(slice(data, start= 64, len=20), address),
+            # Double convert is workaround for #1072
+            convert(convert(slice(data, start= 64, len=20), bytes32), address),
             # Double convert is workaround for #1072
             convert(convert(slice(data, start= 84, len= 2), bytes32), uint256),
             convert(slice(data, start= 86, len=32), bytes32),
