@@ -1,4 +1,5 @@
 # Test normal operation of the Plasma chain (entries and exits)
+
 PLASMA_SYNC_PERIOD = 7
 PLASMA_WITHDRAW_PERIOD = 7
 

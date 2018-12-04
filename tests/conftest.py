@@ -28,7 +28,7 @@ def tester():
 
 
 @pytest.fixture
-def rootchain():
+def rootchain(tester):
 
     class RootChain:
         deposits = []
@@ -36,7 +36,7 @@ def rootchain():
         challenges = []
 
         def deposit(self, token):
-            pass  # Doesn't do anything
+            token.exit_started = tester.time
 
         def startExit(self, user, token):
             self.exits.append(token)
@@ -69,10 +69,10 @@ def rootchain():
 
 
 @pytest.fixture
-def operator(rootchain):
+def operator(tester, rootchain):
 
     class Operator:
-
+        last_sync_time = 0
         entry_queue = []
         txn_queue = []
 
@@ -93,7 +93,8 @@ def operator(rootchain):
             self.txn_queue = []
 
         def is_tracking(self, token):
-            self.sync()
+            if tester.time - self.last_sync_time > 1:
+                self.sync()
             return token in rootchain.deposits
 
     return Operator()
@@ -139,10 +140,13 @@ def users(tester, rootchain, operator):
             self.purse['plasma'].append(token)
 
         def withdraw(self, token):
-            self.purse['plasma'].remove(token)
-            rootchain.startExit(self, token)
-            token.exit_started = tester.time
-            self.purse['withdraw'].append(token)
+            if token in self.purse['deposit']:
+                self.purse['deposit'].remove(token)
+                self.purse['eth'].append(token)
+            else:
+                self.purse['plasma'].remove(token)
+                rootchain.startExit(self, token)
+                self.purse['withdraw'].append(token)
 
         def finalize(self, token):
             success = rootchain.finalizeExit(token)

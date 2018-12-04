@@ -6,7 +6,7 @@ PLASMA_WITHDRAW_PERIOD = 0
 
 
 @pytest.fixture
-def setup(operator, users):
+def setup(tester, operator, users):
     u1, u2, u3 = users[:3]
     token = u1.purse['eth'][0]
     u1.deposit(token)
