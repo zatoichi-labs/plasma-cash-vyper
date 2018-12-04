@@ -1,6 +1,6 @@
 # Test normal operation of the Plasma chain (entries and exits)
-PLASMA_SYNC_PERIOD = 0
-PLASMA_WITHDRAW_PERIOD = 0
+PLASMA_SYNC_PERIOD = 7
+PLASMA_WITHDRAW_PERIOD = 7
 
 
 def test_deposit(tester, operator, users):
@@ -24,7 +24,7 @@ def test_immediate_withdraw(tester, operator, users):
     u = users[0]
     token = u.purse['eth'][0]
     u.deposit(token)
-    assert operator.is_tracking(token)
+    assert not operator.is_tracking(token)
     u.withdraw(token)
     # Wait until the challenge period has elapsed
     while token.exit_started + PLASMA_WITHDRAW_PERIOD < tester.time:
