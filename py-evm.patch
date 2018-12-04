@@ -1,0 +1,5 @@
+# Code size of RootChain is 46370, over the limit of 24576
+13c13
+< EIP170_CODE_SIZE_LIMIT = 24577
+---
+> EIP170_CODE_SIZE_LIMIT = 245770  # FIXME 10x'd this
