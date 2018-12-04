@@ -8,6 +8,9 @@ class Token:
         self.uid = uid
         self.history = []
 
+    def __repr__(self):
+        return "Token({})".format(self.uid)
+
     def __eq__(self, other):
         return self.uid == other.uid
 
@@ -39,8 +42,16 @@ def rootchain():
             self.exits.append(token)
 
         def challengeExit(self, token):
-            self.exits.remove(token)
-            return True
+            t = self.exits[self.exits.index(token)]
+            challengeAfter = t.history[-1] == token.history[-2]
+            challengeBetween = t.history[-2] == token.history[-2] and \
+                    t.history[-1] != token.history[-1]
+            if challengeAfter or challengeBetween:
+                self.exits.remove(token)
+                return True
+            else:
+                self.challenges.append(token)
+                return False
 
         def respondChallenge(self, token):
             self.challenges.remove(token)
@@ -92,12 +103,25 @@ def operator(rootchain):
 def users(tester, rootchain, operator):
     class User:
 
-        def __init__(self, tokens):
-            self.purse = {}
-            self.purse['eth'] = tokens
-            self.purse['plasma'] = []
-            self.purse['deposit'] = []
-            self.purse['withdraw'] = []
+        def __init__(self, uid, purse={}):
+            token_purse = purse
+            if 'eth' not in token_purse.keys():
+                token_purse['eth'] = []
+            if 'plasma' not in token_purse.keys():
+                token_purse['plasma'] = []
+            if 'deposit' not in token_purse.keys():
+                token_purse['deposit'] = []
+            if 'withdraw' not in token_purse.keys():
+                token_purse['withdraw'] = []
+            self.uid = uid
+            self.purse = token_purse
+
+        def __eq__(self, other):
+            return self.uid == other.uid
+
+        def __repr__(self):
+            return "User({}, {})".format(self.uid, \
+                    dict([(k, v) for k, v in self.purse.items() if len(v) > 0]))
 
         def deposit(self, token):
             self.purse['eth'].remove(token)
@@ -121,7 +145,8 @@ def users(tester, rootchain, operator):
             self.purse['withdraw'].append(token)
 
         def finalize(self, token):
-            rootchain.finalizeExit(token)
+            success = rootchain.finalizeExit(token)
             token.history = []
-            
-    return [User([Token(1)]), User([]), User([])]
+            return success
+
+    return [User(1, {'eth': [Token(1)]}), User(2), User(3)]
