@@ -1,5 +1,0 @@
-# Gas deployment costs are higher than 3.14mgas
-74c74
-< GENESIS_GAS_LIMIT = 3141592
----
-> GENESIS_GAS_LIMIT = 31415920 # FIXME 10x'd this
