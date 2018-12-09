@@ -18,8 +18,8 @@ def tester():
 
 
 @pytest.fixture
-def rootchain(tester):
-    return RootChain(tester)
+def rootchain():
+    return RootChain()
 
 
 @pytest.fixture

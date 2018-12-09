@@ -1,7 +1,6 @@
 class RootChain:
 
-    def __init__(self, tester):
-        self.tester = tester
+    def __init__(self):
         self.depositors = {}
         self.pending_deposits = []
         self.deposits = []
@@ -9,7 +8,6 @@ class RootChain:
         self.challenges = []
 
     def deposit(self, user, token):
-        token.exit_started = self.tester.time
         self.pending_deposits.append(token)
         self.depositors[token] = user
 

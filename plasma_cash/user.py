@@ -25,6 +25,7 @@ class User:
 
     def deposit(self, token):
         self.rootchain.deposit(self, token)
+        token.exit_started = self.tester.time
         token.addHistory(self, self, self.tester.time)
         self.purse['eth'].remove(token)
         self.purse['deposit'].append(token)
