@@ -83,7 +83,7 @@ def test_challengeBefore_invalidHistory(rootchain, tester, operator, users):
     u1.withdraw(fake_token)
     # Someone challenges that
     assert not rootchain.challengeExit(token)  # Challenge can be responded to
-    assert not u2.finalize(token)  # Exit failed, challenge succeeded
+    assert not u1.finalize(token)  # Exit failed, challenge succeeded
 
 
 def test_challengeBefore_validHistory(tester, operator, rootchain, users):
