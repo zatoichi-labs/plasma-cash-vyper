@@ -1,4 +1,3 @@
-import copy
 import pytest
 
 from plasma_cash import (
@@ -19,12 +18,12 @@ def test_challengeAfter(tester, operator, rootchain, users):
     token = u1.purse['eth'][0]
     u1.deposit(token)
     while not operator.is_tracking(token):
-        tester.mine(0)
+        tester.mine()
     u1.send(u2, token)
 
     u2.withdraw(token)
     # u2 creates a token with no history of withdrawal
-    fake_token = Token(token.uid, history=copy.deepcopy(token.history))
+    fake_token = Token(token.uid, history=list(token.history))
     print(rootchain.exits)  # rootchain.exits is mutated for some reason
     # u2 starts a withdrawal
     # u2 sends the fake token to u3
@@ -47,11 +46,11 @@ def test_challengeBetween(rootchain, tester, operator, users):
     token = u1.purse['eth'][0]
     u1.deposit(token)
     while not operator.is_tracking(token):
-        tester.mine(0)
+        tester.mine()
     u1.send(u2, token)
 
     # u2 actually has token, we remove transfer from u1 to u2
-    fake_token = Token(token.uid, history=copy.deepcopy(token.history[:-1]))
+    fake_token = Token(token.uid, history=list(token.history[:-1]))
     u1.purse['plasma'].append(fake_token)
     u1.send(u3, fake_token)
     u3.withdraw(fake_token)
@@ -69,11 +68,11 @@ def test_challengeBefore_invalidHistory(rootchain, tester, operator, users):
     token = u1.purse['eth'][0]
     u1.deposit(token)
     while not operator.is_tracking(token):
-        tester.mine(0)
+        tester.mine()
     u1.send(u2, token)
 
     # u2 actually has token, we remove transfer from u1 to u2
-    fake_token = Token(token.uid, history=copy.deepcopy(token.history[:-1]))
+    fake_token = Token(token.uid, history=list(token.history[:-1]))
     # u1 makes an invalid transfer to u3
     u1.purse['plasma'].append(fake_token)
     # u1 sends it to u3 (who is colluding)
@@ -98,7 +97,7 @@ def test_challengeBefore_validHistory(tester, operator, rootchain, users):
     token = u1.purse['eth'][0]
     u1.deposit(token)
     while not operator.is_tracking(token):
-        tester.mine(0)
+        tester.mine()
     u1.send(u2, token)
 
     # u2 has token, sends it to u3

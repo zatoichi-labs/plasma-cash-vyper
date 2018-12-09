@@ -17,7 +17,7 @@ def test_deposit(tester, operator, users):
     # Wait for operator to see it and start tracking
     while not operator.is_tracking(token):
         assert tester.time < deposit_time + PLASMA_SYNC_PERIOD
-        tester.mine(0)
+        tester.mine()
     # Trading is now live
     assert token in u.purse['plasma']
 
@@ -29,7 +29,7 @@ def test_immediate_withdraw(tester, operator, users):
     u.withdraw(token)
     # Wait until the challenge period has elapsed
     while token.exit_started + PLASMA_WITHDRAW_PERIOD < tester.time:
-        tester.mine(0)
+        tester.mine()
     assert token in u.purse['eth']
     assert not operator.is_tracking(token)
     
@@ -39,7 +39,7 @@ def test_1trade_withdraw(tester, operator, users):
     u1.deposit(token)
     # Wait for operator to signal trading is ready
     while not operator.is_tracking(token):
-        tester.mine(0)
+        tester.mine()
     # Send it to a different user
     u1.send(u2, token)
     assert token in u2.purse['plasma']

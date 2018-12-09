@@ -1,6 +1,8 @@
 import pytest
 
 from plasma_cash import (
+    token_interface,
+    rootchain_interface,
     Operator,
     RootChain,
     Token,
@@ -9,28 +11,50 @@ from plasma_cash import (
 
 
 @pytest.fixture
-def tester():
+def tester(w3):
     class Tester:
-        time = 0
-        def mine(self, num_blocks):
-            self.time += 1
-    return Tester()
+        def __init__(self, w3):
+            self.w3 = w3
+
+        @property
+        def time(self):
+            return self.w3.eth.blockNumber
+
+        def mine(self, numBlocks=1):
+            self.w3.providers[0].ethereum_tester.mine_blocks(numBlocks)
+
+    return Tester(w3)
 
 
 @pytest.fixture
-def rootchain():
-    return RootChain()
+def token(w3):
+    owners = []
+    for a in w3.eth.accounts[1:9]:
+        for _ in range(8):
+            owners.append(a)
+    tokens = list(range(64))
+    args = (owners, tokens)
+    txn_hash = w3.eth.contract(**token_interface).constructor(*args).transact()
+    address = w3.eth.waitForTransactionReceipt(txn_hash)['contractAddress']
+    return w3.eth.contract(address, **token_interface)
 
 
 @pytest.fixture
-def operator(tester, rootchain):
-    return Operator(tester, rootchain)
+def rootchain(w3, token):
+    txn_hash = w3.eth.contract(**rootchain_interface).constructor(token.address).transact()
+    address = w3.eth.waitForTransactionReceipt(txn_hash)['contractAddress']
+    return RootChain(w3, address)
 
 
 @pytest.fixture
-def users(tester, rootchain, operator):
+def operator(w3, rootchain):
+    return Operator(w3, rootchain)
+
+
+@pytest.fixture
+def users(w3, rootchain, operator):
     return [
-        User(tester, rootchain, operator, 1, {'eth': [Token(1)]}),
-        User(tester, rootchain, operator, 2),
-        User(tester, rootchain, operator, 3)
+        User(w3, rootchain, operator, 1, {'eth': [Token(1)]}),
+        User(w3, rootchain, operator, 2),
+        User(w3, rootchain, operator, 3)
     ]

@@ -1,7 +1,7 @@
 class User:
 
-    def __init__(self, tester, rootchain, operator, uid, purse={}):
-        self.tester = tester
+    def __init__(self, w3, rootchain, operator, uid, purse={}):
+        self.w3 = w3
         self.rootchain = rootchain
         self.operator = operator
         token_purse = purse
@@ -25,8 +25,8 @@ class User:
 
     def deposit(self, token):
         self.rootchain.deposit(self, token)
-        token.exit_started = self.tester.time
-        token.addHistory(self, self, self.tester.time)
+        token.exit_started = self.w3.eth.blockNumber
+        token.addHistory(self, self, self.w3.eth.blockNumber)
         self.purse['eth'].remove(token)
         self.purse['deposit'].append(token)
 
@@ -43,7 +43,7 @@ class User:
         self.purse['plasma'].remove(token)
 
     def receive(self, user, token):
-        token.addHistory(user, self, self.tester.time)
+        token.addHistory(user, self, self.w3.eth.blockNumber)
         # TODO Validate history
         self.purse['plasma'].append(token)
         return True  # Return acceptance status to operator
