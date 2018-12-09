@@ -33,7 +33,7 @@ class Operator:
 
     def is_tracking(self, token):
         # NOTE This is temporary until async behavior is implemented
-        if self.w3.eth.blockNumber - self.last_sync_time > 1:
+        if self.w3.eth.blockNumber - self.last_sync_time > 2:
             self.sync()
         # Respond to user's request of whether we are tracking this token yet
         return token.uid in self.token_uid_tracking
