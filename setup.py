@@ -44,6 +44,8 @@ setup(
         "eth-utils>=1.3.0,<2.0.0",
         "py-trie>=1.3.8,<2.0.0",
         "rlp>=1,<2",
+        "web3>=4.8.1",
+        "vyper>=0.1.0b5",
     ],
     extras_require=extras_require,
     license="MIT",
