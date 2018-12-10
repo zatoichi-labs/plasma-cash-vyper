@@ -1,7 +1,9 @@
+import copy
 import pytest
 
 from plasma_cash import (
     Token,
+    TokenStatus,
 )
 
 # Test 3 challenges in Plasma Cash design
@@ -13,25 +15,27 @@ def test_challengeAfter(tester, operator, rootchain, users):
     A challenger notices a coin spend occured
     after a withdrawal was initiated
     """
-    # Setup
+    # Setup (u1, u2 has tokens, u3 does not)
     u1, u2, u3 = users[:3]
-    token = u1.purse['eth'][0]
+    token = u1.purse[0]
     u1.deposit(token)
     while not operator.is_tracking(token):
         tester.mine()
     u1.send(u2, token)
 
-    u2.withdraw(token)
+    # u2 sends the token to u3
+    u2.send(u3, token)
+
     # u2 creates a token with no history of withdrawal
-    fake_token = Token(token.uid, history=list(token.history))
-    print(rootchain.exits)  # rootchain.exits is mutated for some reason
+    fake_history = copy.deepcopy(token.history[:-1])
+    fake_token = Token(token.uid,
+                       status=TokenStatus.PLASMACHAIN,
+                       history=fake_history,
+                       deposit_block_number=token.deposit_block_number)
+    u2.purse.append(fake_token)
     # u2 starts a withdrawal
-    # u2 sends the fake token to u3
-    u2.purse['withdraw'].remove(token)
-    u2.purse['plasma'].append(fake_token)
-    u2.send(u3, fake_token)
-    print(rootchain.exits)
-    assert rootchain.challengeExit(fake_token)  # Challenge was successful!
+    u2.withdraw(fake_token)
+    assert rootchain.challengeExit(token)  # Challenge was successful!
     
 
 def test_challengeBetween(rootchain, tester, operator, users):
@@ -41,18 +45,23 @@ def test_challengeBetween(rootchain, tester, operator, users):
     the exit occurs after the challenge
     (double spend attack)
     """
-    # Setup
+    # Setup (u1, u2 has tokens, u3 does not)
     u1, u2, u3 = users[:3]
-    token = u1.purse['eth'][0]
+    token = u1.purse[0]
     u1.deposit(token)
     while not operator.is_tracking(token):
         tester.mine()
     u1.send(u2, token)
 
-    # u2 actually has token, we remove transfer from u1 to u2
-    fake_token = Token(token.uid, history=list(token.history[:-1]))
-    u1.purse['plasma'].append(fake_token)
+    # u2 actually has token, but pretend transfer from u1 to u2 didn't happen
+    fake_token = Token(token.uid,
+                       status=TokenStatus.PLASMACHAIN,
+                       history=[],
+                       deposit_block_number=token.deposit_block_number)
+    u1.purse.append(fake_token)
+    # u1 sends u3 a double-spent coin
     u1.send(u3, fake_token)
+    # u3 withdraws it
     u3.withdraw(fake_token)
     assert rootchain.challengeExit(token)  # Challenge was successful!
 
@@ -63,27 +72,30 @@ def test_challengeBefore_invalidHistory(rootchain, tester, operator, users):
     invalid history, so they begin an interactive
     challenge with the exiting user to falsify the exit
     """
-    # Setup
+    # Setup (u1, u2 has tokens, u3 does not)
     u1, u2, u3 = users[:3]
-    token = u1.purse['eth'][0]
+    token = u1.purse[0]
+    assert token.status == TokenStatus.ROOTCHAIN
     u1.deposit(token)
     while not operator.is_tracking(token):
         tester.mine()
-    u1.send(u2, token)
+    # u1 never sends the token to anyone
 
-    # u2 actually has token, we remove transfer from u1 to u2
-    fake_token = Token(token.uid, history=list(token.history[:-1]))
-    # u1 makes an invalid transfer to u3
-    u1.purse['plasma'].append(fake_token)
-    # u1 sends it to u3 (who is colluding)
-    u1.send(u3, fake_token)
+    # u2 makes a fake token
+    fake_token = Token(token.uid,
+                       status=TokenStatus.PLASMACHAIN,
+                       history=[],
+                       deposit_block_number=token.deposit_block_number)
+    u2.purse.append(fake_token)
+    # u2 sends it to u3 (who is colluding)
+    u2.send(u3, fake_token)
     # u3 sends it back
-    u3.send(u1, fake_token)
-    # u1 exits
-    u1.withdraw(fake_token)
+    u3.send(u2, fake_token)
+    # u2 exits
+    u2.withdraw(fake_token)
     # Someone challenges that
     assert not rootchain.challengeExit(token)  # Challenge can be responded to
-    assert not u1.finalize(token)  # Exit failed, challenge succeeded
+    assert not u2.finalize(token)  # Exit failed, challenge succeeded
 
 
 def test_challengeBefore_validHistory(tester, operator, rootchain, users):
@@ -92,9 +104,10 @@ def test_challengeBefore_validHistory(tester, operator, rootchain, users):
     history they have, so they begin an interactive
     challenge with the exiting user to attempt to censor
     """
-    # Setup
+    # Setup (u1, u2 has tokens, u3 does not)
     u1, u2, u3 = users[:3]
-    token = u1.purse['eth'][0]
+    token = u1.purse[0]
+    assert token.status == TokenStatus.ROOTCHAIN
     u1.deposit(token)
     while not operator.is_tracking(token):
         tester.mine()
