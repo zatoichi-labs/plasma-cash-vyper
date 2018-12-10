@@ -5,5 +5,10 @@ from .contracts import (
 
 from .operator import Operator
 from .rootchain import RootChain
-from .token import Token
+
+from .token import (
+    Token,
+    TokenStatus,
+)
+
 from .user import User
