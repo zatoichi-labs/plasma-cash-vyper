@@ -1,11 +1,11 @@
 class Operator:
 
-    def __init__(self, w3, rootchain):
-        self.w3 = w3
+    def __init__(self, rootchain, acct):
         self.rootchain = rootchain
         self.last_sync_time = 0
         self.token_uid_tracking = []
         self.txn_queue = []
+        self.acct = acct
 
     def transfer(self, sender, receiver, token):
         """
@@ -29,11 +29,11 @@ class Operator:
             self.token_uid_tracking.append(t.uid)
         # TODO Do something with the transaction queue
         self.rootchain.publish()
-        self.last_sync_time = self.w3.eth.blockNumber
+        self.last_sync_time = self.rootchain._w3.eth.blockNumber
 
     def is_tracking(self, token):
         # NOTE This is temporary until async behavior is implemented
-        if self.w3.eth.blockNumber - self.last_sync_time > 2:
+        if self.rootchain._w3.eth.blockNumber - self.last_sync_time > 2:
             self.sync()
         # Respond to user's request of whether we are tracking this token yet
         return token.uid in self.token_uid_tracking
