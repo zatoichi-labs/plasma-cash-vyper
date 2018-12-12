@@ -9,6 +9,7 @@ BlockPublished: event({blkRoot: bytes32})
 
 # Deposit/Exit Events
 Deposit: event({tokenId: uint256, owner: address, txnHash: bytes32})
+DepositCancelled: event({tokenId: uint256, owner: address})
 ExitStarted: event({tokenId: uint256, owner: address})
 ExitFinished: event({tokenId: uint256, owner: address})
 
@@ -23,6 +24,11 @@ authority: address
 token: public(ERC721)
 childChain: bytes32[uint256]
 childChain_len: public(uint256) # Simulates stack data structure
+
+deposits: { # struct Deposit
+    depositor: address,
+    depositBlk: uint256,
+}[uint256] # tokenId => depositor
 
 exits: { # struct Exit
     time: timestamp,
@@ -130,10 +136,12 @@ def deposit(
                     convert(txn_newOwner,   bytes32)
                 )
             )
+
     # Allow depositor to withdraw their current token (No other spends happen)
-    blkRoot: bytes32 = self._getMerkleRoot(txnHash, _tokenId, self.empty_merkle_branch)
-    self.childChain[self.childChain_len] = blkRoot
-    self.childChain_len += 1
+    self.deposits[_tokenId] = {
+        depositor: _from,
+        depositBlk: self.childChain_len
+    }
 
     # Note: This will signal to the Plasma Operator to accept the deposit into the Child Chain
     log.Deposit(_tokenId, _from, txnHash)
@@ -168,6 +176,15 @@ def onERC721Received(
 
     # We must return the method_id of this function so that safeTransferFrom works
     return method_id("onERC721Received(address,address,uint256,bytes)", bytes32)
+
+# Withdraw a deposit before the block is published
+# NOTE Don't accept a deposited token until it's in a published block
+@public
+def withdraw(_tokenId: uint256):
+    assert self.deposits[_tokenId].depositor == msg.sender
+    assert self.deposits[_tokenId].depositBlk == self.childChain_len
+    self.token.safeTransferFrom(self, msg.sender, _tokenId)
+    log.DepositCancelled(_tokenId, msg.sender)
 
 @public
 def startExit(
