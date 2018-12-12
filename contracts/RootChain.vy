@@ -152,7 +152,7 @@ def onERC721Received(
     operator: address,
     _from: address,
     _tokenId: uint256,
-    data: bytes[150]
+    _data: bytes[1024],
 ) -> bytes32:
 
     # Sanity check that the token contract is depositing
@@ -163,13 +163,13 @@ def onERC721Received(
             _from,
             _tokenId,
             # Double convert is workaround for #1072
-            convert(convert(slice(data, start=  0, len=32), bytes32), uint256),
+            convert(convert(slice(_data, start=  0, len=32), bytes32), uint256),
             # Double convert is workaround for #1072
-            convert(convert(slice(data, start= 32, len=32), bytes32), uint256),
+            convert(convert(slice(_data, start= 32, len=32), bytes32), uint256),
             # Double convert is workaround for #1072
-            convert(convert(slice(data, start= 64, len=20), bytes32), address),
+            convert(convert(slice(_data, start= 64, len=20), bytes32), address),
             # Double convert is workaround for #1072
-            convert(convert(slice(data, start= 84, len= 2), bytes32), uint256),
+            convert(convert(slice(_data, start= 84, len= 2), bytes32), uint256),
             convert(slice(data, start= 86, len=32), bytes32),
             convert(slice(data, start=118, len=32), bytes32)
         )
