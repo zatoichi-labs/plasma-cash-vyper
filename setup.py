@@ -5,8 +5,8 @@ from setuptools import setup, find_packages
 
 extras_require = {
     'test': [
-        "pytest==3.0.7",
-        "pytest-ethereum==0.1.2",
+        "pytest>=4.0.0",
+        "pytest-ethereum>=0.1.3a4",
         "pytest-xdist",
         "tox>=2.6.0,<3",
         "hypothesis==3.7.0",
@@ -42,7 +42,7 @@ setup(
     python_requires='>=3.5.3,<4',
     install_requires=[
         "eth-utils>=1.3.0,<2.0.0",
-        "py-trie>=1.3.8,<2.0.0",
+        "trie>=1.3.8,<2.0.0",
         "rlp>=1,<2",
         "web3>=4.8.1",
         "vyper>=0.1.0b5",
