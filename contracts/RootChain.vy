@@ -170,8 +170,8 @@ def onERC721Received(
             convert(convert(slice(_data, start= 64, len=20), bytes32), address),
             # Double convert is workaround for #1072
             convert(convert(slice(_data, start= 84, len= 2), bytes32), uint256),
-            convert(slice(data, start= 86, len=32), bytes32),
-            convert(slice(data, start=118, len=32), bytes32)
+            convert(slice(_data, start= 86, len=32), bytes32),
+            convert(slice(_data, start=118, len=32), bytes32)
         )
 
     # We must return the method_id of this function so that safeTransferFrom works
