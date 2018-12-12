@@ -4,6 +4,9 @@ contract ERC721:
     def ownerOf(_tokenId: uint256) -> address: constant
 
 
+# Block Events
+BlockPublished: event({blkRoot: bytes32})
+
 # Deposit/Exit Events
 Deposit: event({tokenId: uint256, owner: address, txnHash: bytes32})
 ExitStarted: event({tokenId: uint256, owner: address})
@@ -100,6 +103,7 @@ def submitBlock(blkRoot: bytes32):
     assert msg.sender == self.authority
     self.childChain[self.childChain_len] = blkRoot
     self.childChain_len += 1
+    log.BlockPublished(blkRoot)
 
 @private
 def deposit(
