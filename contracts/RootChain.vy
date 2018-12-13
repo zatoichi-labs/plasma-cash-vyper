@@ -25,10 +25,10 @@ token: public(ERC721)
 childChain: bytes32[uint256]
 childChain_len: public(uint256) # Simulates stack data structure
 
-deposits: { # struct Deposit
+deposits: public({ # struct Deposit
     depositor: address,
     depositBlk: uint256,
-}[uint256] # tokenId => depositor
+}[uint256]) # tokenId => depositor
 
 exits: { # struct Exit
     time: timestamp,
@@ -111,42 +111,20 @@ def submitBlock(blkRoot: bytes32):
     self.childChain_len += 1
     log.BlockPublished(blkRoot)
 
-@private
-def deposit(
-    _from: address,
-    _tokenId: uint256,
-    # Expansion of transaction struct
-    txn_prevBlkNum: uint256,
-    txn_tokenId: uint256,
-    txn_newOwner: address,
-    txn_sigV: uint256,
-    txn_sigR: bytes32,
-    txn_sigS: bytes32
-):
-    # First validate that the transaction is consistent with the deposit
-    assert txn_prevBlkNum == self.childChain_len
-    assert txn_tokenId == _tokenId
-    assert txn_newOwner == _from
-
-    # Compute transaction hash (leaf of Merkle tree)
-    txnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn_prevBlkNum, bytes32),
-                    convert(txn_tokenId,    bytes32),
-                    convert(txn_newOwner,   bytes32)
-                )
-            )
+@public
+def deposit(_tokenId: uint256, _txnHash: bytes32):
+	# Transfer the token to us
+    self.token.safeTransferFrom(msg.sender, self, _tokenId)
 
     # Allow depositor to withdraw their current token (No other spends happen)
     self.deposits[_tokenId] = {
-        depositor: _from,
+        depositor: msg.sender,
         depositBlk: self.childChain_len
     }
 
     # Note: This will signal to the Plasma Operator to accept the deposit into the Child Chain
-    log.Deposit(_tokenId, _from, txnHash)
+    log.Deposit(_tokenId, msg.sender, _txnHash)
 
-# Used in lieu of `deposit()` function for ERC721
 @public
 def onERC721Received(
     operator: address,
@@ -154,26 +132,6 @@ def onERC721Received(
     _tokenId: uint256,
     _data: bytes[1024],
 ) -> bytes32:
-
-    # Sanity check that the token contract is depositing
-    assert self.token.ownerOf(_tokenId) == self
-
-    # Plasmachain transaction is provided through custom data
-    self.deposit(
-            _from,
-            _tokenId,
-            # Double convert is workaround for #1072
-            convert(convert(slice(_data, start=  0, len=32), bytes32), uint256),
-            # Double convert is workaround for #1072
-            convert(convert(slice(_data, start= 32, len=32), bytes32), uint256),
-            # Double convert is workaround for #1072
-            convert(convert(slice(_data, start= 64, len=20), bytes32), address),
-            # Double convert is workaround for #1072
-            convert(convert(slice(_data, start= 84, len= 2), bytes32), uint256),
-            convert(slice(_data, start= 86, len=32), bytes32),
-            convert(slice(_data, start=118, len=32), bytes32)
-        )
-
     # We must return the method_id of this function so that safeTransferFrom works
     return method_id("onERC721Received(address,address,uint256,bytes)", bytes32)
 
