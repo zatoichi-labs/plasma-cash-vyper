@@ -237,7 +237,7 @@ def startExit(
             )
 
     # Validate inclusion of txn in merkle root prior to exit
-    assert self.childChain[txnBlkNum] == \
+    assert self.childChain[txn_prevBlkNum] == \
             self._getMerkleRoot(txnHash, txn_tokenId, txnProof)
 
     # Validate signer of txn was the receiver of prevTxn
@@ -258,7 +258,7 @@ def startExit(
             )
 
     # Validate inclusion of prevTxn in merkle root prior to txn
-    assert self.childChain[txn_prevBlkNum] == \
+    assert self.childChain[prevTxn_prevBlkNum] == \
             self._getMerkleRoot(prevTxnHash, prevTxn_tokenId, prevTxnProof)
 
     # Validate the exit hasn't already been started
