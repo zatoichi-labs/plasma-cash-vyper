@@ -20,11 +20,6 @@ from .token import (
 )
 
 
-def to_bytes32(val: int) -> bytes:
-    assert 0 <= val < 2**256, "Value out of range!"
-    return val.to_bytes(32, byteorder='big')
-
-
 class User:
 
     def __init__(self,
@@ -126,9 +121,8 @@ class User:
             parent, exit = token.history[-2:]
             parentProof = self._operator.get_branch(parent.tokenId, parent.prevBlkNum)
             exitProof = self._operator.get_branch(exit.tokenId, exit.prevBlkNum)
-            blkNum = exit.prevBlkNum+1
             self._rootchain.functions.\
-                    startExit(*parent.to_tuple, parentProof, *exit.to_tuple, exitProof, blkNum).\
+                    startExit(*parent.to_tuple, parentProof, *exit.to_tuple, exitProof).\
                     transact({'from':self._acct})
             token.set_in_withdrawal()
             # TODO Add listener for challenges to withdraw
