@@ -215,8 +215,7 @@ def startExit(
     txn_sigV: uint256,
     txn_sigR: uint256,
     txn_sigS: uint256,
-    txnProof: bytes32[256],
-    txnBlkNum: uint256
+    txnProof: bytes32[256]
 ):
     # Validate txn and parent are the same token
     assert prevTxn_tokenId == txn_tokenId
