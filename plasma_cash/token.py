@@ -45,10 +45,13 @@ class Transaction:
         return (self.prevBlkNum, self.tokenId, self.newOwner, *self.signature)
 
     @property
+    def to_bytes(self):
+        return encode_single('(uint256,uint256,address,uint256,uint256,uint256)', self.to_tuple)
+
+    @property
     def hash(self):
         # Encode struct as ordered tuple of members
-        data = encode_single('(uint256,uint256,address,uint256,uint256,uint256)', self.to_tuple)
-        return keccak(data)
+        return keccak(self.to_bytes)
 
 
 class TokenStatus(enum.Enum):
