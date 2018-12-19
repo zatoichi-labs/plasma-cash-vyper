@@ -4,19 +4,48 @@ contract ERC721:
     def ownerOf(_tokenId: uint256) -> address: constant
 
 
-# Block Events
-BlockPublished: event({blkRoot: bytes32})
+# Operator Events
+BlockPublished: event({
+        blkRoot: bytes32,
+    })
 
-# Deposit/Exit Events
-Deposit: event({tokenId: uint256, owner: address, txnHash: bytes32})
-DepositCancelled: event({tokenId: uint256, owner: address})
-ExitStarted: event({tokenId: uint256, owner: address})
-ExitFinished: event({tokenId: uint256, owner: address})
+# Deposit Events
+DepositAdded: event({ # struct Transaction
+        prevBlkNum: uint256,
+        tokenId: uint256,
+        newOwner: address,
+        sigV: uint256,
+        sigR: uint256,
+        sigS: uint256,
+    })
+
+# Withdrawal Events
+DepositCancelled: event({
+        tokenId: uint256,
+        owner: address,
+    })
+ExitStarted: event({
+        tokenId: uint256,
+        owner: address,
+    })
+ExitFinished: event({
+        tokenId: uint256,
+        owner: address,
+    })
 
 # Challenge Events
-ExitCancelled: event({tokenId: uint256, challenger: address})
-ChallengeStarted: event({tokenId: uint256, blkNum: uint256})
-ChallengeCancelled: event({tokenId: uint256, blkNum: uint256})
+ExitCancelled: event({
+        tokenId: uint256,
+        challenger: address,
+    })
+ChallengeStarted: event({
+        tokenId: uint256,
+        blkNum: uint256,
+    })
+ChallengeCancelled: event({
+        tokenId: uint256,
+        blkNum: uint256,
+    })
 
 
 # Storage
@@ -28,7 +57,7 @@ childChain_len: public(uint256) # Simulates stack data structure
 deposits: public({ # struct Deposit
     depositor: address,
     depositBlk: uint256,
-}[uint256]) # tokenId => depositor
+}[uint256]) # tokenId => Deposit
 
 exits: { # struct Exit
     time: timestamp,
@@ -103,6 +132,7 @@ def _getMerkleRoot(
         index /= 2
     return computedHash
 
+
 ## Plasma functions
 @public
 def submitBlock(blkRoot: bytes32):
@@ -135,6 +165,7 @@ def onERC721Received(
     # We must return the method_id of this function so that safeTransferFrom works
     return method_id("onERC721Received(address,address,uint256,bytes)", bytes32)
 
+
 # Withdraw a deposit before the block is published
 # NOTE Don't accept a deposited token until it's in a published block
 @public
@@ -143,6 +174,7 @@ def withdraw(_tokenId: uint256):
     assert self.deposits[_tokenId].depositBlk == self.childChain_len
     self.token.safeTransferFrom(self, msg.sender, _tokenId)
     log.DepositCancelled(_tokenId, msg.sender)
+
 
 @public
 def startExit(
@@ -231,6 +263,7 @@ def startExit(
     # Announce the exit!
     log.ExitStarted(txn_tokenId, msg.sender)
 
+
 @public
 def challengeExit(
     # Expansion of transaction struct
@@ -304,7 +337,8 @@ def challengeExit(
 
         # Announce the challenge!
         log.ChallengeStarted(txn_tokenId, txnBlkNum)
-    
+
+
 @public
 def respondChallengeExit(
     # Expansion of transaction struct
