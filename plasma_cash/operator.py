@@ -29,8 +29,8 @@ class TokenToTxnHashIdSMT(SparseMerkleTree):
     def branch(self, token_uid: int) -> Set[Hash32]:
         return super().branch(to_bytes32(token_uid))
 
-    def set(self, token_uid: int, txn_hash: Hash32) -> Set[Hash32]:
-        return super().set(to_bytes32(token_uid), txn_hash)
+    def set(self, token_uid: int, txn: bytes) -> Set[Hash32]:
+        return super().set(to_bytes32(token_uid), txn)
 
     def exists(self, token_uid: int) -> Hash32:
         return super().exists(to_bytes32(token_uid))
@@ -109,7 +109,7 @@ class Operator:
             print("Not signed by current holder!")
             return False
         # NOTE This accepts multiple transactions in a single block
-        self.transactions[-1][transaction.tokenId] = transaction.hash
+        self.transactions[-1][transaction.tokenId] = transaction.to_bytes
         return True
 
     def publish_block(self):
@@ -117,7 +117,7 @@ class Operator:
         for token_id, txn in self.pending_deposits.items():
             assert not self.is_tracking(token_id)
             self.deposits[token_id] = txn
-            self.transactions[-1][token_id] = txn.hash
+            self.transactions[-1][token_id] = txn.to_bytes
         self.pending_deposits = {}
 
         # Submit the roothash for transactions
