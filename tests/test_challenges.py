@@ -1,3 +1,4 @@
+# Test 3 challenges in Plasma Cash design
 import copy
 import pytest
 
@@ -6,11 +7,11 @@ from plasma_cash import (
     TokenStatus,
 )
 
-# Test 3 challenges in Plasma Cash design
-PLASMA_WITHDRAW_PERIOD = 0
+PLASMA_SYNC_PERIOD = 7
+PLASMA_WITHDRAW_PERIOD = 7
 
 
-def test_challengeAfter(tester, operator, rootchain, users):
+def test_challengeAfter(tester, operator, rootchain_contract, users):
     """
     A challenger notices a coin spend occured
     after a withdrawal was initiated
@@ -18,13 +19,15 @@ def test_challengeAfter(tester, operator, rootchain, users):
     # Setup (u1, u2 has tokens, u3 does not)
     u1, u2, u3 = users[:3]
     token = u1.purse[0]
-    u1.deposit(token)
+    u1.deposit(token.uid)
     while not operator.is_tracking(token):
         tester.mine()
-    u1.send(u2, token)
+        operator.monitor()  # FIXME Remove when async
+        assert tester.blockNumber < PLASMA_SYNC_PERIOD
+    u1.transfer(u2, token.uid)
 
     # u2 sends the token to u3
-    u2.send(u3, token)
+    u2.transfer(u3, token.uid)
 
     # u2 creates a token with no history of withdrawal
     fake_history = copy.deepcopy(token.history[:-1])
@@ -34,11 +37,11 @@ def test_challengeAfter(tester, operator, rootchain, users):
                        deposit_block_number=token.deposit_block_number)
     u2.purse.append(fake_token)
     # u2 starts a withdrawal
-    u2.withdraw(fake_token)
-    assert rootchain.challengeExit(token)  # Challenge was successful!
+    u2.withdraw(fake_token.uid)
+    assert rootchain_contract.challengeExit(token.uid)  # Challenge was successful!
     
 
-def test_challengeBetween(rootchain, tester, operator, users):
+def test_challengeBetween(tester, operator, rootchain_contract, users):
     """
     A challenger notices a coin spend occured
     between the exit and the parent, where
@@ -48,10 +51,12 @@ def test_challengeBetween(rootchain, tester, operator, users):
     # Setup (u1, u2 has tokens, u3 does not)
     u1, u2, u3 = users[:3]
     token = u1.purse[0]
-    u1.deposit(token)
-    while not operator.is_tracking(token):
+    u1.deposit(token.uid)
+    while not operator.is_tracking(token.uid):
         tester.mine()
-    u1.send(u2, token)
+        operator.monitor()  # FIXME Remove when async
+        assert tester.blockNumber < PLASMA_SYNC_PERIOD
+    u1.transfer(u2, token.uid)
 
     # u2 actually has token, but pretend transfer from u1 to u2 didn't happen
     fake_token = Token(token.uid,
@@ -60,13 +65,13 @@ def test_challengeBetween(rootchain, tester, operator, users):
                        deposit_block_number=token.deposit_block_number)
     u1.purse.append(fake_token)
     # u1 sends u3 a double-spent coin
-    u1.send(u3, fake_token)
+    u1.transfer(u3, fake_token.uid)
     # u3 withdraws it
-    u3.withdraw(fake_token)
-    assert rootchain.challengeExit(token)  # Challenge was successful!
+    u3.withdraw(fake_token.uid)
+    assert rootchain.challengeExit(token.uid)  # Challenge was successful!
 
 
-def test_challengeBefore_invalidHistory(rootchain, tester, operator, users):
+def test_challengeBefore_invalidHistory(tester, operator, rootchain_contract, users):
     """
     A challenger notices a coin exit with
     invalid history, so they begin an interactive
@@ -76,9 +81,11 @@ def test_challengeBefore_invalidHistory(rootchain, tester, operator, users):
     u1, u2, u3 = users[:3]
     token = u1.purse[0]
     assert token.status == TokenStatus.ROOTCHAIN
-    u1.deposit(token)
-    while not operator.is_tracking(token):
+    u1.deposit(token.uid)
+    while not operator.is_tracking(token.uid):
         tester.mine()
+        operator.monitor()  # FIXME Remove when async
+        assert tester.blockNumber < PLASMA_SYNC_PERIOD
     # u1 never sends the token to anyone
 
     # u2 makes a fake token
@@ -88,17 +95,17 @@ def test_challengeBefore_invalidHistory(rootchain, tester, operator, users):
                        deposit_block_number=token.deposit_block_number)
     u2.purse.append(fake_token)
     # u2 sends it to u3 (who is colluding)
-    u2.send(u3, fake_token)
+    u2.transfer(u3, fake_token.uid)
     # u3 sends it back
-    u3.send(u2, fake_token)
+    u3.transfer(u2, fake_token.uid)
     # u2 exits
     u2.withdraw(fake_token)
     # Someone challenges that
-    assert not rootchain.challengeExit(token)  # Challenge can be responded to
-    assert not u2.finalize(token)  # Exit failed, challenge succeeded
+    assert not rootchain.challengeExit(token.uid)  # Challenge can be responded to
+    assert not u2.finalize(token.uid)  # Exit failed, challenge succeeded
 
 
-def test_challengeBefore_validHistory(tester, operator, rootchain, users):
+def test_challengeBefore_validHistory(tester, operator, rootchain_contract, users):
     """
     A malicious challenger notices a coin exit with
     history they have, so they begin an interactive
@@ -108,18 +115,20 @@ def test_challengeBefore_validHistory(tester, operator, rootchain, users):
     u1, u2, u3 = users[:3]
     token = u1.purse[0]
     assert token.status == TokenStatus.ROOTCHAIN
-    u1.deposit(token)
-    while not operator.is_tracking(token):
+    u1.deposit(token.uid)
+    while not operator.is_tracking(token.uid):
         tester.mine()
-    u1.send(u2, token)
+        operator.monitor()  # FIXME Remove when async
+        assert tester.blockNumber < PLASMA_SYNC_PERIOD
+    u1.send(u2, token.uid)
 
     # u2 has token, sends it to u3
-    u2.send(u3, token)
+    u2.transfer(u3, token.uid)
     # u3 makes an valid transfer to u1
-    u3.send(u1, token)
-    u1.withdraw(token)
+    u3.transfer(u1, token.uid)
+    u1.withdraw(token.uid)
     # Someone challenges that
-    assert not rootchain.challengeExit(token)  # Challenge can be responded to
+    assert not rootchain.challengeExit(token.uid)  # Challenge can be responded to
     # But history is real, so you can respond and remove it
-    rootchain.respondChallenge(token)
-    assert u1.finalize(token)  # Exit was successful!
+    rootchain.respondChallenge(token.uid)
+    assert u1.finalize(token.uid)  # Exit was successful!
