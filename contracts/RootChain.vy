@@ -94,11 +94,10 @@ challenges: { # struct Challenge
     challenger: address
 }[uint256][uint256]  # tokenId => txnBlkNum => Challenge
 
-empty_merkle_branch: bytes32[256]
-
 
 # Constants
 CHALLENGE_PERIOD: constant(timedelta) = 604800  # 7 days (7*24*60*60 secs)
+
 
 # Constructor
 @public
@@ -106,13 +105,6 @@ def __init__(_token: address):
     self.authority = msg.sender
     self.token = _token
 
-    last_node: bytes32 = keccak256(convert(0, bytes32))
-    self.empty_merkle_branch[255] = last_node
-    
-    for i in range(255):
-        last_node = keccak256(concat(last_node, last_node))
-        self.empty_merkle_branch[254-i] = last_node
-        
 
 ## UTILITY FUNCTIONS
 @constant
@@ -141,20 +133,49 @@ def submitBlock(blkRoot: bytes32):
     self.childChain_len += 1
     log.BlockPublished(blkRoot)
 
-@public
-def deposit(_tokenId: uint256, _txnHash: bytes32):
-	# Transfer the token to us
-    self.token.safeTransferFrom(msg.sender, self, _tokenId)
 
-    # Allow depositor to withdraw their current token (No other spends happen)
-    self.deposits[_tokenId] = {
-        depositor: msg.sender,
-        depositBlk: self.childChain_len
+@public
+def deposit(
+    # Expansion of transaction struct
+    txn_prevBlkNum: uint256,
+    txn_tokenId: uint256,
+    txn_newOwner: address,
+    txn_sigV: uint256,
+    txn_sigR: uint256,
+    txn_sigS: uint256,
+):
+    # Verify block number is current block
+    assert self.childChain_len == txn_prevBlkNum
+
+    # Verify this transaction was signed by message sender
+    txn_hash: bytes32 = keccak256(
+            concat(
+                convert(txn_prevBlkNum, bytes32),
+                convert(txn_tokenId, bytes32),
+                convert(txn_newOwner, bytes32),
+                convert(txn_sigV, bytes32),
+                convert(txn_sigR, bytes32),
+                convert(txn_sigS, bytes32),
+            )
+        )
+    # FIXME Hack until signatures work
+    assert msg.sender == convert(convert(txn_sigV, bytes32), address)#ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
+
+	# Transfer the token to this contract (also verifies custody)
+    self.token.safeTransferFrom(msg.sender, self, txn_tokenId)
+
+    # Allow recipient of deposit to withdraw the token
+    # (No other spends can happen until confirmed)
+    self.deposits[txn_tokenId] = {
+        depositor: txn_newOwner,
+        depositBlk: txn_prevBlkNum,
     }
 
     # Note: This will signal to the Plasma Operator to accept the deposit into the Child Chain
-    log.Deposit(_tokenId, msg.sender, _txnHash)
+    log.DepositAdded(txn_prevBlkNum, txn_tokenId, txn_newOwner, txn_sigV, txn_sigR, txn_sigS)
 
+
+# This will be the callback that token.safeTransferFrom() executes
 @public
 def onERC721Received(
     operator: address,
@@ -173,6 +194,7 @@ def withdraw(_tokenId: uint256):
     assert self.deposits[_tokenId].depositor == msg.sender
     assert self.deposits[_tokenId].depositBlk == self.childChain_len
     self.token.safeTransferFrom(self, msg.sender, _tokenId)
+    del self.deposits[_tokenId]
     log.DepositCancelled(_tokenId, msg.sender)
 
 
@@ -207,7 +229,10 @@ def startExit(
             concat(
                     convert(txn_prevBlkNum, bytes32),
                     convert(txn_tokenId,    bytes32),
-                    convert(txn_newOwner,   bytes32)
+                    convert(txn_newOwner,   bytes32),
+                    convert(txn_sigV, bytes32),
+                    convert(txn_sigR, bytes32),
+                    convert(txn_sigS, bytes32),
                 )
             )
 
@@ -216,7 +241,8 @@ def startExit(
             self._getMerkleRoot(txnHash, txn_tokenId, txnProof)
 
     # Validate signer of txn was the receiver of prevTxn
-    txn_signer: address = ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
+    # FIXME Hack until signatures work
+    txn_signer: address = convert(convert(txn_sigV, bytes32), address)#ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
     assert prevTxn_newOwner == txn_signer
 
     # Compute transaction hash (leaf of Merkle tree)
@@ -224,7 +250,10 @@ def startExit(
             concat(
                     convert(prevTxn_prevBlkNum, bytes32),
                     convert(prevTxn_tokenId,    bytes32),
-                    convert(prevTxn_newOwner,   bytes32)
+                    convert(prevTxn_newOwner,   bytes32),
+                    convert(prevTxn_sigV, bytes32),
+                    convert(prevTxn_sigR, bytes32),
+                    convert(prevTxn_sigS, bytes32),
                 )
             )
 
@@ -287,7 +316,10 @@ def challengeExit(
             concat(
                     convert(txn_prevBlkNum, bytes32),
                     convert(txn_tokenId,    bytes32),
-                    convert(txn_newOwner,   bytes32)
+                    convert(txn_newOwner,   bytes32),
+                    convert(txn_sigV, bytes32),
+                    convert(txn_sigR, bytes32),
+                    convert(txn_sigS, bytes32),
                 )
             )
 
@@ -296,7 +328,8 @@ def challengeExit(
             self._getMerkleRoot(txnHash, txn_tokenId, txnProof)
 
     # Get signer of challenge txn
-    txn_signer: address = ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
+    # FIXME Hack until signatures work
+    txn_signer: address = convert(convert(txn_sigV, bytes32), address)#ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
 
     # Challenge transaction was spent after the exit
     challengeAfter: bool = (txnBlkNum > self.exits[txn_tokenId].txnBlkNum) and \
@@ -362,7 +395,10 @@ def respondChallengeExit(
             concat(
                     convert(txn_prevBlkNum, bytes32),
                     convert(txn_tokenId,    bytes32),
-                    convert(txn_newOwner,   bytes32)
+                    convert(txn_newOwner,   bytes32),
+                    convert(txn_sigV, bytes32),
+                    convert(txn_sigR, bytes32),
+                    convert(txn_sigS, bytes32),
                 )
             )
 
@@ -371,7 +407,8 @@ def respondChallengeExit(
             self._getMerkleRoot(txnHash, txn_tokenId, txnProof)
 
     # Get signer of response txn
-    txn_signer: address = ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
+    # FIXME Hack until signatures work
+    txn_signer: address = convert(convert(txn_sigV, bytes32), address)#ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
 
     # Validate signer of response txn is the recipient of the challenge txn
     assert self.challenges[txn_tokenId][txn_prevBlkNum].txn.newOwner == txn_signer
@@ -385,13 +422,11 @@ def respondChallengeExit(
     # Announce the challenge!
     log.ChallengeCancelled(txn_tokenId, txnBlkNum)
 
+
 @public
 def finalizeExit(tokenId: uint256):
-    # Validate the exit has already been started
-    assert self.exits[tokenId].time != 0
-
     # Validate the challenge period is over
-    assert block.timestamp > self.exits[tokenId].time + CHALLENGE_PERIOD
+    assert self.exits[tokenId].time + CHALLENGE_PERIOD <= block.timestamp
 
     if self.exits[tokenId].numChallenges > 0:
         # Cancel the exit!
