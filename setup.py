@@ -33,12 +33,10 @@ setup(
     version='0.1.0',
     description="""Python implementation of Plasma Cash. Contracts in Vyper.""",
     long_description_markdown_filename='README.md',
-    author='Bryant Eisenbach',
-    #author_email='fubuloubu@gmail.com',
+    author='@fubloubu',
     url='https://github.com/GunClear/plasma-cash-vyper',
     include_package_data=True,
     py_modules=['plasma_cash'],
-    #setup_requires=['setuptools-markdown'],
     python_requires='>=3.5.3,<4',
     install_requires=[
         "eth-utils>=1.3.0,<2.0.0",
