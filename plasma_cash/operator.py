@@ -65,14 +65,19 @@ class Operator:
                 )
             ] = self.remDeposit
 
+        # Add listener for challenging withdrawals
+        self.listeners[
+                self._rootchain.events.ExitStarted.createFilter(
+                    fromBlock=self._w3.eth.blockNumber,
+                )
+            ] = self.checkExit
+
         # Add listener for finalized withdrawals
         self.listeners[
                 self._rootchain.events.ExitFinished.createFilter(
                     fromBlock=self._w3.eth.blockNumber,
                 )
             ] = self.remDeposit
-
-        # TODO Add listener for challenging withdrawals
 
     # TODO Make this async loop
     def monitor(self):
@@ -92,6 +97,11 @@ class Operator:
             del self.pending_deposits[log.args['tokenId']]
         if log.args['tokenId'] in self.deposits.keys():
             del self.deposits[log.args['tokenId']]
+
+    def checkExit(self, log):
+        # TODO Also validate that exit hasn't been challenged yet
+        if self.deposits[log.args['tokenId']].newOwner != log.args['owner']:
+            pass  # TODO Challenge exit by looking up appropiate challenge txn
 
     def addTransaction(self, transaction: Transaction):
         """
