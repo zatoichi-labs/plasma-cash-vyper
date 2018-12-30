@@ -8,6 +8,7 @@ from .rootchain import RootChain
 
 from .token import (
     Token,
+    Transaction,
     TokenStatus,
 )
 
