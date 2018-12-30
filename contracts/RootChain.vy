@@ -467,6 +467,9 @@ def finalizeExit(tokenId: uint256):
         # Validate the caller is the owner
         assert self.exits[tokenId].owner == msg.sender
 
+        # Clear the exit
+        clear(self.exits[tokenId])
+
         # Withdraw the token!
         self.token.safeTransferFrom(self, msg.sender, tokenId)
 
