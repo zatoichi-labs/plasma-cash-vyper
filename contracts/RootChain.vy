@@ -110,19 +110,21 @@ def __init__(_token: address):
 @constant
 @public
 def _getMerkleRoot(
-    leaf: bytes32,
     path: uint256,
-    proof: bytes32[256] # kwarg in a built-in function
+    leaf: bytes32,
+    proof: bytes32[256]
 ) -> bytes32:
-    index: uint256 = path
-    computedHash: bytes32 = leaf
-    for proofElement in proof:
-        if (index % 2 == 0):
-            computedHash = keccak256(concat(computedHash, proofElement))
+    targetBit: uint256 = 1 # traverse path in LSB:leaf->MSB:root order
+    proofElement: bytes32
+    nodeHash: bytes32 = keccak256(leaf)  # First node is hash of leaf
+    for i in range(256):
+        proofElement = proof[255-i] # proof is in root->leaf order, so iterate in reverse
+        if (bitwise_and(path, targetBit) > 0):
+            nodeHash = keccak256(concat(proofElement, nodeHash))
         else:
-            computedHash = keccak256(concat(proofElement, computedHash))
-        index /= 2
-    return computedHash
+            nodeHash = keccak256(concat(nodeHash, proofElement))
+        targetBit = shift(targetBit, 1)
+    return nodeHash
 
 
 ## Plasma functions
@@ -237,7 +239,7 @@ def startExit(
 
     # Validate inclusion of txn in merkle root prior to exit
     assert self.childChain[txn_prevBlkNum] == \
-            self._getMerkleRoot(txnHash, txn_tokenId, txnProof)
+            self._getMerkleRoot(txn_tokenId, txnHash, txnProof)
 
     # Validate signer of txn was the receiver of prevTxn
     # FIXME Hack until signatures work
@@ -258,7 +260,7 @@ def startExit(
 
     # Validate inclusion of prevTxn in merkle root prior to txn
     assert self.childChain[prevTxn_prevBlkNum] == \
-            self._getMerkleRoot(prevTxnHash, prevTxn_tokenId, prevTxnProof)
+            self._getMerkleRoot(prevTxn_tokenId, prevTxnHash, prevTxnProof)
 
     # Validate the exit hasn't already been started
     assert self.exits[txn_tokenId].time == 0
@@ -324,7 +326,7 @@ def challengeExit(
 
     # Validate inclusion of txn in merkle root at challenge
     assert self.childChain[txnBlkNum] == \
-            self._getMerkleRoot(txnHash, txn_tokenId, txnProof)
+            self._getMerkleRoot(txn_tokenId, txnHash, txnProof)
 
     # Get signer of challenge txn
     # FIXME Hack until signatures work
@@ -403,7 +405,7 @@ def respondChallengeExit(
 
     # Validate inclusion of txn in merkle root at response
     assert self.childChain[txnBlkNum] == \
-            self._getMerkleRoot(txnHash, txn_tokenId, txnProof)
+            self._getMerkleRoot(txn_tokenId, txnHash, txnProof)
 
     # Get signer of response txn
     # FIXME Hack until signatures work
