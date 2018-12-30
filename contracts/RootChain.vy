@@ -51,7 +51,7 @@ ChallengeCancelled: event({
 # Storage
 authority: address
 token: public(ERC721)
-childChain: bytes32[uint256]
+childChain: public(bytes32[uint256])
 childChain_len: public(uint256) # Simulates stack data structure
 
 deposits: public({ # struct Deposit
