@@ -269,7 +269,7 @@ def startExit(
     #   struct Exit
     self.exits[txn_tokenId] = {
         time: block.timestamp,
-        txnBlkNum: txnBlkNum,
+        txnBlkNum: txn_prevBlkNum+1,
         txn: {
             prevBlkNum: txn_prevBlkNum,
             tokenId: txn_tokenId,
@@ -333,18 +333,18 @@ def challengeExit(
     txn_signer: address = convert(convert(txn_sigV, bytes32), address)#ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
 
     # Challenge transaction was spent after the exit
-    challengeAfter: bool = (txnBlkNum > self.exits[txn_tokenId].txnBlkNum) and \
+    challengeAfter: bool = (txnBlkNum >= self.exits[txn_tokenId].txnBlkNum) and \
             (self.exits[txn_tokenId].txn.newOwner == txn_signer)
 
     # Challenge transaction was double spent between the parent and the exit
-    challengeBetween: bool = (txnBlkNum <= self.exits[txn_tokenId].txn.prevBlkNum) and \
+    challengeBetween: bool = (txnBlkNum < self.exits[txn_tokenId].txn.prevBlkNum) and \
             (txnBlkNum > self.exits[txn_tokenId].prevTxn.prevBlkNum)
     # Waiting on #1075 to combine with ^
     challengeBetween = challengeBetween and \
             (self.exits[txn_tokenId].prevTxn.newOwner == txn_signer)
 
     # Challenge transaction is prior to parent, which is potentially forged history
-    challengeBefore: bool = (txnBlkNum <= self.exits[txn_tokenId].prevTxn.prevBlkNum)
+    challengeBefore: bool = (txnBlkNum < self.exits[txn_tokenId].prevTxn.prevBlkNum)
 
     assert challengeAfter or challengeBetween or challengeBefore
 
@@ -388,10 +388,12 @@ def respondChallenge(
     txnBlkNum: uint256
 ):
     # Double-check that they are dealing with the same tokenId
-    assert self.challenges[txn_tokenId][txn_prevBlkNum].txn.tokenId == txn_tokenId
+    # NOTE txnBlkNum may need to be txn_prevBlkNum, not sure yet!
+    assert self.challenges[txn_tokenId][txnBlkNum].txn.tokenId == txn_tokenId
 
     # Validate that the response is after the challenge
-    assert self.challenges[txn_tokenId][txn_prevBlkNum].txn.prevBlkNum < txn_prevBlkNum
+    # NOTE txnBlkNum may need to be txn_prevBlkNum, not sure yet!
+    assert self.challenges[txn_tokenId][txnBlkNum].txn.prevBlkNum < txn_prevBlkNum
 
     # Compute transaction hash (leaf of Merkle tree)
     txnHash: bytes32 = keccak256(
@@ -406,7 +408,8 @@ def respondChallenge(
             )
 
     # Validate inclusion of txn in merkle root at response
-    assert self.childChain[txnBlkNum] == \
+    # NOTE txn_prevBlkNum may need to be txnBlkNum, not sure yet!
+    assert self.childChain[txn_prevBlkNum] == \
             self._getMerkleRoot(txn_tokenId, txnHash, txnProof)
 
     # Get signer of response txn
@@ -414,7 +417,9 @@ def respondChallenge(
     txn_signer: address = convert(convert(txn_sigV, bytes32), address)#ecrecover(txnHash, txn_sigV, txn_sigR, txn_sigS)
 
     # Validate signer of response txn is the recipient of the challenge txn
-    assert self.challenges[txn_tokenId][txn_prevBlkNum].txn.newOwner == txn_signer
+    # NOTE txnBlkNum may need to be txn_prevBlkNum, not sure yet!
+    #      (this means that respond points to challenge)
+    assert self.challenges[txn_tokenId][txnBlkNum].txn.newOwner == txn_signer
 
     # Remove the challenge
     del self.challenges[txn_tokenId][txnBlkNum]
