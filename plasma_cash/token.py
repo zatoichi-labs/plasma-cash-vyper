@@ -68,19 +68,21 @@ class Token:
                  status: TokenStatus=TokenStatus.ROOTCHAIN,
                  history: List[Transaction]=None):
 
-        if status in [TokenStatus.ROOTCHAIN, TokenStatus.DEPOSIT]:
-            assert history is None
-            history = []
-        else:
-            assert status in [TokenStatus.PLASMACHAIN, TokenStatus.WITHDRAWAL]
-            # Validate full history
-            assert len(history) > 0
-            assert self.valid
-
         self.uid = uid
         self.status = status
-        self.history = history
-        self.history_depth_checked = 0
+
+        if self.status in [TokenStatus.ROOTCHAIN, TokenStatus.DEPOSIT]:
+            # Make history and empty list
+            assert history is None
+            history = []
+
+        self.history = history  # Ordered list of transactions
+        self.history_depth_checked = 0  # How much of the history has been checked (cache)
+
+        if self.status in [TokenStatus.PLASMACHAIN, TokenStatus.WITHDRAWAL]:
+            # Validate full history
+            assert len(self.history) > 0
+            assert self.valid
 
     @property
     def valid(self) -> bool:
