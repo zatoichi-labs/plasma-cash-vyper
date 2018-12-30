@@ -43,29 +43,29 @@ Approval: event({
 # @param _approved Status of operator rights(true if operator rights are given and false if
 # revoked).
 ApprovalForAll: event({
-        _owner: indexed(address),
-        _operator: indexed(address),
-        _approved: bool
-    })
+    _owner: indexed(address),
+    _operator: indexed(address),
+    _approved: bool
+})
 
 
 # @dev Mapping from NFT ID to the address that owns it.
-idToOwner: address[uint256]
+idToOwner: map(uint256, address)
 
 # @dev Mapping from NFT ID to approved address.
-idToApprovals: address[uint256]
+idToApprovals: map(uint256, address)
 
-# @dev Mapping from owner address to count of his tokens.
-ownerToNFTokenCount: uint256[address]
+# @dev Mapping from owner address to count of their tokens.
+ownerToNFTokenCount: map(address, uint256)
 
 # @dev Mapping from owner address to mapping of operator addresses.
-ownerToOperators: bool[address][address]
+ownerToOperators: map(address, map(address, bool))
 
 # @dev Address of minter, who can mint a token
 minter: address
 
 # @dev Mapping of interface id to bool about whether or not it's supported
-supportedInterfaces: bool[bytes32]
+supportedInterfaces: map(bytes32, bool)
 
 # @dev ERC165 interface ID of ERC165
 ERC165_INTERFACE_ID: constant(bytes32) = \
