@@ -346,13 +346,15 @@ def challengeExit(
     # Challenge transaction is prior to parent, which is potentially forged history
     challengeBefore: bool = (txnBlkNum <= self.exits[txn_tokenId].prevTxn.prevBlkNum)
 
+    assert challengeAfter or challengeBetween or challengeBefore
+
     if (challengeAfter or challengeBetween):
         # Cancel the exit!
         del self.exits[txn_tokenId]
 
         # Announce the exit was cancelled
         log.ExitCancelled(txn_tokenId, msg.sender)
-    elif challengeBefore:
+    else: #challengeBefore
         # Log a new challenge!
         self.challenges[txn_tokenId][txnBlkNum] = {
             txn: {
