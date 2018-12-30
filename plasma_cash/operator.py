@@ -32,7 +32,7 @@ class TokenToTxnHashIdSMT(SparseMerkleTree):
     def set(self, token_uid: int, txn: bytes) -> Set[Hash32]:
         return super().set(to_bytes32(token_uid), txn)
 
-    def exists(self, token_uid: int) -> Hash32:
+    def exists(self, token_uid: int) -> bool:
         return super().exists(to_bytes32(token_uid))
 
 
