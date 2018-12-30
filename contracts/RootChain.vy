@@ -376,7 +376,7 @@ def challengeExit(
 
 
 @public
-def respondChallengeExit(
+def respondChallenge(
     # Expansion of transaction struct
     txn_prevBlkNum: uint256,
     txn_tokenId: uint256,
