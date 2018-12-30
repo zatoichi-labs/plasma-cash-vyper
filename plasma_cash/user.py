@@ -20,6 +20,11 @@ from .token import (
 )
 
 
+def to_bytes32(val: int) -> bytes:
+    assert 0 <= val < 2**256, "Value out of range!"
+    return val.to_bytes(32, byteorder='big')
+
+
 class User:
 
     def __init__(self,
