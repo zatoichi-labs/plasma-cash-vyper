@@ -29,8 +29,8 @@ class TokenToTxnHashIdSMT(SparseMerkleTree):
     def branch(self, token_uid: int) -> Set[Hash32]:
         return super().branch(to_bytes32(token_uid))
 
-    def set(self, token_uid: int, txn: bytes) -> Set[Hash32]:
-        return super().set(to_bytes32(token_uid), txn)
+    def set(self, token_uid: int, txn: Transaction) -> Set[Hash32]:
+        return super().set(to_bytes32(token_uid), txn.hash)
 
     def exists(self, token_uid: int) -> bool:
         return super().exists(to_bytes32(token_uid))
@@ -45,9 +45,9 @@ class Operator:
         self._w3 = w3
         self._rootchain = self._w3.eth.contract(rootchain_address, **rootchain_interface)
         self._acct = acct
-        self.pending_deposits = {}
-        self.deposits = {}
-        self.transactions = [TokenToTxnHashIdSMT()]  # Ordered list of txn dbs
+        self.pending_deposits = {}  # Dict mapping tokenId to deposit txn in Rootchain contract
+        self.deposits = {}  # Dict mapping tokenId to last known txn
+        self.transactions = [TokenToTxnHashIdSMT()]  # Ordered list of block txn dbs
         self.last_sync_time = self._w3.eth.blockNumber
 
         # Add listeners (dict of filters: callbacks)
@@ -93,7 +93,7 @@ class Operator:
         if log.args['tokenId'] in self.deposits.keys():
             del self.deposits[log.args['tokenId']]
 
-    def addTransaction(self, transaction):
+    def addTransaction(self, transaction: Transaction):
         """
         Sender asked for a transaction through us
         Validate with the receiver that they want it
@@ -108,8 +108,10 @@ class Operator:
         if self.deposits[transaction.tokenId].newOwner != transaction.sender:
             print("Not signed by current holder!")
             return False
-        # NOTE This accepts multiple transactions in a single block
-        self.transactions[-1][transaction.tokenId] = transaction.to_bytes
+        # NOTE This allows multiple transactions in a single block
+        self.transactions[-1].set(transaction.tokenId, transaction)
+        # Update last known transaction for deposit
+        self.deposits[transaction.tokenId] = transaction
         return True
 
     def publish_block(self):
@@ -117,7 +119,7 @@ class Operator:
         for token_id, txn in self.pending_deposits.items():
             assert not self.is_tracking(token_id)
             self.deposits[token_id] = txn
-            self.transactions[-1][token_id] = txn.to_bytes
+            self.transactions[-1].set(token_id, txn)
         self.pending_deposits = {}
 
         # Submit the roothash for transactions
