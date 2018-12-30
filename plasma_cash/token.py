@@ -90,19 +90,20 @@ class Token:
         if not self.history:
             return True
         # Check if we've fully validated token before
-        if self.history_depth_checked == len(self.history):
+        # (everything validates up to the last txn)
+        if self.history_depth_checked == len(self.history) - 1:
             return True
-        # Perform check on entire chain of history
-        prior_txn = self.history[0]
-        for txn in self.history[1:]:
-            if txn.token_uid != prior_txn.token_uid:
+        # Perform check on unchecked chain of history (cached)
+        prior_txn = self.history[self.history_depth_checked]
+        for txn in self.history[self.history_depth_checked+1:]:
+            if txn.tokenId != prior_txn.tokenId:
                 return False
-            if txn.sender != prior_txn.receiver:
+            if txn.sender != prior_txn.newOwner:
                 return False
-            if txn.block_number < prior_txn.block_number:
+            if txn.prevBlkNum < prior_txn.prevBlkNum:
                 return False
-        # Cache this for later
-        self.history_depth_checked = len(self.history)
+        # Cache this for later (last entry starts the check)
+        self.history_depth_checked = len(self.history) - 1
         return True
 
     @property
