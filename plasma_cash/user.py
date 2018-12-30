@@ -37,9 +37,6 @@ class User:
         self._w3 = w3
         self._token = self._w3.eth.contract(token_address, **token_interface)
         self._rootchain = self._w3.eth.contract(rootchain_address, **rootchain_interface)
-        # Allow the rootchain to pull all our deposits using safeTransferFrom
-        if not self._token.functions.isApprovedForAll(acct, rootchain_address).call():
-            self._token.functions.setApprovalForAll(rootchain_address, True).transact({'from':acct})
         self._operator = operator
         self._acct = acct
         self.purse = purse if purse else []
@@ -67,6 +64,12 @@ class User:
         unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token_uid, self._acct)
         signature = (to_int(hexstr=self._acct), 0, 0)#self._w3.eth.sign(self._acct, unsigned_txn_hash)
         transaction = Transaction(prevBlkNum, token_uid, self._acct, *signature)
+        # Allow the rootchain to pull all our deposits using safeTransferFrom
+        if not self._token.functions.\
+                isApprovedForAll(self._acct, self._rootchain.address).call():
+            self._token.functions.\
+                    setApprovalForAll(self._rootchain.address, True).\
+                    transact({'from':self._acct})
         # Deposit on the rootchain
         self._rootchain.functions.deposit(*transaction.to_tuple).transact({'from':self._acct})
         # Also log when we deposited it and add the deposit to our history
