@@ -16,17 +16,18 @@ with open('contracts/Token.vy', 'r') as f:
             output_formats=['abi', 'bytecode', 'bytecode_runtime']
         )
 
+# Hack until pytest-ethereum includes a way to change the block timestamp
 def set_challenge_period(code, new_param):
     c = code.replace("""
 CHALLENGE_PERIOD: constant(timedelta) = 604800  # 7 days (7*24*60*60 secs)
 """, """
-CHALLENGE_PERIOD: constant(timedelta) = {}  # NOTE monkeypatched!
+CHALLENGE_PERIOD: constant(timedelta) = {0}  # {0} secs (NOTE monkeypatched!)
 """.format(new_param))
     return c
 
 with open('contracts/RootChain.vy', 'r') as f:
     rootchain_interface = vyper.compile_code(
-            set_challenge_period(f.read(), 7),
+            set_challenge_period(f.read(), 1),
             output_formats=['abi', 'bytecode', 'bytecode_runtime']
         )
 
