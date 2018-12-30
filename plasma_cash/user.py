@@ -126,9 +126,15 @@ class User:
             token.finalize_withdrawal()
             # TODO Cancel listener to challenge withdraws for this token
         else:
+            assert len(token.history) >= 2, \
+                    "History must have at least two items, including deposit"
             parent, exit = token.history[-2:]
+
+            # Get the proofs of inclusion of each transaction in their respective blocks
             parentProof = self._operator.get_branch(parent.tokenId, parent.prevBlkNum)
             exitProof = self._operator.get_branch(exit.tokenId, exit.prevBlkNum)
+
+            # We can start the exit now
             self._rootchain.functions.\
                     startExit(*parent.to_tuple, parentProof, *exit.to_tuple, exitProof).\
                     transact({'from':self._acct})
