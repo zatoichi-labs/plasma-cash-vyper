@@ -108,7 +108,7 @@ def __init__(_token: address):
 
 ## UTILITY FUNCTIONS
 @constant
-@private
+@public
 def _getMerkleRoot(
     leaf: bytes32,
     path: uint256,
