@@ -26,7 +26,10 @@ struct Challenge:
 
 # External Contract Interface
 contract ERC721:
-    def safeTransferFrom(_from: address, _to: address, _tokenId: uint256): modifying
+    def safeTransferFrom(_from: address,
+                         _to: address,
+                         _tokenId: uint256): modifying
+
     def ownerOf(_tokenId: uint256) -> address: constant
 
 
@@ -36,7 +39,7 @@ BlockPublished: event({
     })
 
 # Deposit Events
-DepositAdded: event({ # struct Transaction
+DepositAdded: event({  # struct Transaction
         prevBlkNum: uint256,
         tokenId: uint256,
         newOwner: address,
@@ -99,7 +102,7 @@ def __init__(_token: address):
     self.token = _token
 
 
-## UTILITY FUNCTIONS
+# UTILITY FUNCTIONS #
 @constant
 @public
 def _getMerkleRoot(
@@ -107,11 +110,12 @@ def _getMerkleRoot(
     leaf: bytes32,
     proof: bytes32[256]
 ) -> bytes32:
-    targetBit: uint256 = 1 # traverse path in LSB:leaf->MSB:root order
+    targetBit: uint256 = 1  # traverse path in LSB:leaf->MSB:root order
     proofElement: bytes32
     nodeHash: bytes32 = keccak256(leaf)  # First node is hash of leaf
     for i in range(256):
-        proofElement = proof[255-i] # proof is in root->leaf order, so iterate in reverse
+        # proof is in root->leaf order, so iterate in reverse
+        proofElement = proof[255-i]
         if (bitwise_and(path, targetBit) > 0):
             nodeHash = keccak256(concat(proofElement, nodeHash))
         else:
@@ -120,7 +124,7 @@ def _getMerkleRoot(
     return nodeHash
 
 
-## Plasma functions
+# Plasma functions #
 @public
 def submitBlock(blkRoot: bytes32):
     assert msg.sender == self.authority
@@ -166,7 +170,7 @@ def deposit(
     # FIXME Hack until signatures work
     assert msg.sender == convert(convert(txn.sigV, bytes32), address)#ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
 
-	# Transfer the token to this contract (also verifies custody)
+    # Transfer the token to this contract (also verifies custody)
     self.token.safeTransferFrom(msg.sender, self, txn.tokenId)
 
     # Allow recipient of deposit to withdraw the token
@@ -176,8 +180,14 @@ def deposit(
         depositBlk: txn.prevBlkNum,
     })
 
-    # Note: This will signal to the Plasma Operator to accept the deposit into the Child Chain
-    log.DepositAdded(txn.prevBlkNum, txn.tokenId, txn.newOwner, txn.sigV, txn.sigR, txn.sigS)
+    # NOTE: This will signal to the Plasma Operator to
+    #       accept the deposit into the Child Chain
+    log.DepositAdded(txn.prevBlkNum,
+                     txn.tokenId,
+                     txn.newOwner,
+                     txn.sigV,
+                     txn.sigR,
+                     txn.sigS)
 
 
 # This will be the callback that token.safeTransferFrom() executes
@@ -188,8 +198,10 @@ def onERC721Received(
     _tokenId: uint256,
     _data: bytes[1024],
 ) -> bytes32:
-    # We must return the method_id of this function so that safeTransferFrom works
-    return method_id("onERC721Received(address,address,uint256,bytes)", bytes32)
+    # We must return the method_id of this function so safeTransferFrom works
+    return method_id(
+            "onERC721Received(address,address,uint256,bytes)", bytes32
+        )
 
 
 # Withdraw a deposit before the block is published
@@ -262,7 +274,7 @@ def startExit(
 
     # Validate inclusion of txn in merkle root prior to exit
     assert self.childChain[txn.prevBlkNum] == \
-            self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
+        self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Validate signer of txn was the receiver of prevTxn
     # FIXME Hack until signatures work
@@ -283,7 +295,7 @@ def startExit(
 
     # Validate inclusion of prevTxn in merkle root prior to txn
     assert self.childChain[prevTxn.prevBlkNum] == \
-            self._getMerkleRoot(prevTxn.tokenId, prevTxnHash, prevTxnProof)
+        self._getMerkleRoot(prevTxn.tokenId, prevTxnHash, prevTxnProof)
 
     # Validate the exit hasn't already been started
     assert self.exits[txn.tokenId].time == 0
@@ -344,25 +356,28 @@ def challengeExit(
 
     # Validate inclusion of txn in merkle root at challenge
     assert self.childChain[txnBlkNum] == \
-            self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
+        self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Get signer of challenge txn
     # FIXME Hack until signatures work
     txn_signer: address = convert(convert(txn.sigV, bytes32), address)#ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
 
     # Challenge transaction was spent after the exit
-    challengeAfter: bool = (txnBlkNum >= self.exits[txn.tokenId].txnBlkNum) and \
-            (self.exits[txn.tokenId].txn.newOwner == txn_signer)
+    challengeAfter: bool = \
+        (txnBlkNum >= self.exits[txn.tokenId].txnBlkNum) and \
+        (self.exits[txn.tokenId].txn.newOwner == txn_signer)
 
     # Challenge transaction was double spent between the parent and the exit
-    challengeBetween: bool = (txnBlkNum < self.exits[txn.tokenId].txn.prevBlkNum) and \
-            (txnBlkNum > self.exits[txn.tokenId].prevTxn.prevBlkNum)
+    challengeBetween: bool = \
+        (txnBlkNum < self.exits[txn.tokenId].txn.prevBlkNum) and \
+        (txnBlkNum > self.exits[txn.tokenId].prevTxn.prevBlkNum)
     # Waiting on #1075 to combine with ^
     challengeBetween = challengeBetween and \
-            (self.exits[txn.tokenId].prevTxn.newOwner == txn_signer)
+        (self.exits[txn.tokenId].prevTxn.newOwner == txn_signer)
 
-    # Challenge transaction is prior to parent, which is potentially forged history
-    challengeBefore: bool = (txnBlkNum < self.exits[txn.tokenId].prevTxn.prevBlkNum)
+    # Challenge transaction is prior to parent, which might be forged
+    challengeBefore: bool = \
+        (txnBlkNum < self.exits[txn.tokenId].prevTxn.prevBlkNum)
 
     assert challengeAfter or challengeBetween or challengeBefore
 
@@ -372,13 +387,13 @@ def challengeExit(
 
         # Announce the exit was cancelled
         log.ExitCancelled(txn.tokenId, msg.sender)
-    else: #challengeBefore
+    else:  # challengeBefore
         # Log a new challenge!
         self.challenges[txn.tokenId][txnBlkNum] = Challenge({
             txn: txn,
             challenger: msg.sender
         })
-        
+
         # Don't forget to increment the challenge counter!
         self.exits[txn.tokenId].numChallenges += 1
 
@@ -408,13 +423,15 @@ def respondChallenge(
         sigS: txn_sigS,
     })
 
+    challenge: Challenge = self.challenges[txn.tokenId][txnBlkNum]
+
     # Double-check that they are dealing with the same tokenId
     # NOTE txnBlkNum may need to be txn_prevBlkNum, not sure yet!
-    assert self.challenges[txn.tokenId][txnBlkNum].txn.tokenId == txn.tokenId
+    assert challenge.txn.tokenId == txn.tokenId
 
     # Validate that the response is after the challenge
     # NOTE txnBlkNum may need to be txn_prevBlkNum, not sure yet!
-    assert self.challenges[txn.tokenId][txnBlkNum].txn.prevBlkNum < txn.prevBlkNum
+    assert challenge.txn.prevBlkNum < txn.prevBlkNum
 
     # Compute transaction hash (leaf of Merkle tree)
     txnHash: bytes32 = keccak256(
@@ -431,7 +448,7 @@ def respondChallenge(
     # Validate inclusion of txn in merkle root at response
     # NOTE txn_prevBlkNum may need to be txnBlkNum, not sure yet!
     assert self.childChain[txn.prevBlkNum] == \
-            self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
+        self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Get signer of response txn
     # FIXME Hack until signatures work
@@ -440,11 +457,11 @@ def respondChallenge(
     # Validate signer of response txn is the recipient of the challenge txn
     # NOTE txnBlkNum may need to be txn_prevBlkNum, not sure yet!
     #      (this means that respond points to challenge)
-    assert self.challenges[txn.tokenId][txnBlkNum].txn.newOwner == txn_signer
+    assert challenge.txn.newOwner == txn_signer
 
     # Remove the challenge
     clear(self.challenges[txn.tokenId][txnBlkNum])
-    
+
     # Don't forget to increment the challenge counter!
     self.exits[txn.tokenId].numChallenges -= 1
 
