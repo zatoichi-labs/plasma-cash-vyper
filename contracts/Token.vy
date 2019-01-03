@@ -11,48 +11,43 @@ contract ERC721Receiver:
         ) -> bytes32: constant
 
 
-"""
-@dev Emits when ownership of any NFT changes by any mechanism.
-     This event emits when NFTs are created (`from` == 0) and
-     destroyed (`to` == 0). Exception: during contract creation,
-     any number of NFTs may be created and assigned without emitting
-     Transfer. At the time of any transfer, the approved address for
-     that NFT (if any) is reset to none.
-@param _from Sender of NFT
-     (if address is zero address it indicates token creation).
-@param _to Receiver of NFT
-     (if address is zero address it indicates token destruction).
-@param _tokenId The NFT that got transfered.
-"""
+
+# @dev Emits when ownership of any NFT changes by any mechanism.
+#      This event emits when NFTs are created (`from` == 0) and
+#      destroyed (`to` == 0). Exception: during contract creation,
+#      any number of NFTs may be created and assigned without emitting
+#      Transfer. At the time of any transfer, the approved address for
+#      that NFT (if any) is reset to none.
+# @param _from Sender of NFT
+#      (if address is zero address it indicates token creation).
+# @param _to Receiver of NFT
+#      (if address is zero address it indicates token destruction).
+# @param _tokenId The NFT that got transfered.
 Transfer: event({
         _from: indexed(address),
         _to: indexed(address),
         _tokenId: indexed(uint256)
     })
 
-"""
-@dev This emits when the approved address for an NFT is changed or
-     reaffirmed. The zero address indicates there is no approved address.
-     When a Transfer event emits, this also indicates that the approved
-     address for that NFT (if any) is reset to none.
-@param _owner Owner of NFT.
-@param _approved Address that we are approving.
-@param _tokenId NFT which we are approving.
-"""
+# @dev This emits when the approved address for an NFT is changed or
+#      reaffirmed. The zero address indicates there is no approved address.
+#      When a Transfer event emits, this also indicates that the approved
+#      address for that NFT (if any) is reset to none.
+# @param _owner Owner of NFT.
+# @param _approved Address that we are approving.
+# @param _tokenId NFT which we are approving.
 Approval: event({
         _owner: indexed(address),
         _approved: indexed(address),
         _tokenId: indexed(uint256)
     })
 
-"""
-@dev This emits when an operator is enabled or disabled for an owner.
-     The operator can manage all NFTs of the owner.
-@param _owner Owner of NFT.
-@param _operator Address to which we are setting operator rights.
-@param _approved Status of operator rights
-     (true if operator rights are given and false if revoked).
-"""
+# @dev This emits when an operator is enabled or disabled for an owner.
+#      The operator can manage all NFTs of the owner.
+# @param _owner Owner of NFT.
+# @param _operator Address to which we are setting operator rights.
+# @param _approved Status of operator rights
+#      (true if operator rights are given and false if revoked).
 ApprovalForAll: event({
     _owner: indexed(address),
     _operator: indexed(address),
