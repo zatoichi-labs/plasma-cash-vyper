@@ -134,25 +134,7 @@ def submitBlock(blkRoot: bytes32):
 
 
 @public
-def deposit(
-    # Expansion of transaction struct (await VIP 1019)
-    txn_prevBlkNum: uint256,
-    txn_tokenId: uint256,
-    txn_newOwner: address,
-    txn_sigV: uint256,
-    txn_sigR: uint256,
-    txn_sigS: uint256,
-):
-    # Temporary until VIP 1019 is implemented
-    txn: Transaction = Transaction({
-        prevBlkNum: txn_prevBlkNum,
-        tokenId: txn_tokenId,
-        newOwner: txn_newOwner,
-        sigV: txn_sigV,
-        sigR: txn_sigR,
-        sigS: txn_sigS,
-    })
-
+def deposit(txn: Transaction):
     # Verify block number is current block
     assert self.childChain_len == txn.prevBlkNum
 
@@ -213,43 +195,11 @@ def withdraw(_tokenId: uint256):
 
 @public
 def startExit(
-    # Expansion of transaction struct (await VIP 1019)
-    prevTxn_prevBlkNum: uint256,
-    prevTxn_tokenId: uint256,
-    prevTxn_newOwner: address,
-    prevTxn_sigV: uint256,
-    prevTxn_sigR: uint256,
-    prevTxn_sigS: uint256,
+    prevTxn: Transaction,
     prevTxnProof: bytes32[256],
-    # Expansion of transaction struct (await VIP 1019)
-    txn_prevBlkNum: uint256,
-    txn_tokenId: uint256,
-    txn_newOwner: address,
-    txn_sigV: uint256,
-    txn_sigR: uint256,
-    txn_sigS: uint256,
+    txn: Transaction,
     txnProof: bytes32[256]
 ):
-    # Temporary until VIP 1019 is implemented
-    txn: Transaction = Transaction({
-        prevBlkNum: txn_prevBlkNum,
-        tokenId: txn_tokenId,
-        newOwner: txn_newOwner,
-        sigV: txn_sigV,
-        sigR: txn_sigR,
-        sigS: txn_sigS,
-    })
-
-    # Temporary until VIP 1019 is implemented
-    prevTxn: Transaction = Transaction({
-        prevBlkNum: prevTxn_prevBlkNum,
-        tokenId: prevTxn_tokenId,
-        newOwner: prevTxn_newOwner,
-        sigV: prevTxn_sigV,
-        sigR: prevTxn_sigR,
-        sigS: prevTxn_sigS,
-    })
-
     # Validate txn and parent are the same token
     assert prevTxn.tokenId == txn.tokenId
 
@@ -313,31 +263,15 @@ def startExit(
     })
 
     # Announce the exit!
-    log.ExitStarted(txn_tokenId, msg.sender)
+    log.ExitStarted(txn.tokenId, msg.sender)
 
 
 @public
 def challengeExit(
-    # Expansion of transaction struct (await VIP 1019)
-    txn_prevBlkNum: uint256,
-    txn_tokenId: uint256,
-    txn_newOwner: address,
-    txn_sigV: uint256,
-    txn_sigR: uint256,
-    txn_sigS: uint256,
+    txn: Transaction,
     txnProof: bytes32[256],
     txnBlkNum: uint256
 ):
-    # Temporary until VIP 1019 is implemented
-    txn: Transaction = Transaction({
-        prevBlkNum: txn_prevBlkNum,
-        tokenId: txn_tokenId,
-        newOwner: txn_newOwner,
-        sigV: txn_sigV,
-        sigR: txn_sigR,
-        sigS: txn_sigS,
-    })
-
     # Validate the exit has already been started
     assert self.exits[txn.tokenId].time != 0
 
@@ -409,26 +343,10 @@ def challengeExit(
 
 @public
 def respondChallenge(
-    # Expansion of transaction struct (await VIP 1019)
-    txn_prevBlkNum: uint256,
-    txn_tokenId: uint256,
-    txn_newOwner: address,
-    txn_sigV: uint256,
-    txn_sigR: uint256,
-    txn_sigS: uint256,
+    txn: Transaction,
     txnProof: bytes32[256],
     txnBlkNum: uint256
 ):
-    # Temporary until VIP 1019 is implemented
-    txn: Transaction = Transaction({
-        prevBlkNum: txn_prevBlkNum,
-        tokenId: txn_tokenId,
-        newOwner: txn_newOwner,
-        sigV: txn_sigV,
-        sigR: txn_sigR,
-        sigS: txn_sigS,
-    })
-
     challenge: Challenge = self.challenges[txn.tokenId][txnBlkNum]
 
     # Double-check that they are dealing with the same tokenId
