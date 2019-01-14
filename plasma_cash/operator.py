@@ -2,7 +2,7 @@ from typing import Set
 
 from trie.smt import SparseMerkleTree
 
-from eth_typing import AnyAddress, Hash32
+from eth_typing import AnyAddress, ChecksumAddress, Hash32
 from eth_account import Account
 from eth_utils import to_bytes
 
@@ -78,6 +78,10 @@ class Operator:
                     fromBlock=self._w3.eth.blockNumber,
                 )
             ] = self.remDeposit
+
+    @property
+    def address(self) -> ChecksumAddress:
+        return self._acct.address
 
     # TODO Make this async loop
     def monitor(self):
