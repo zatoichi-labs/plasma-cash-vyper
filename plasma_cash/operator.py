@@ -41,10 +41,10 @@ class Operator:
     def __init__(self,
                  w3: Web3,
                  rootchain_address: AnyAddress,
-                 acct: Account):
+                 private_key: bytes):
         self._w3 = w3
         self._rootchain = self._w3.eth.contract(rootchain_address, **rootchain_interface)
-        self._acct = acct
+        self._acct = Account.privateKeyToAccount(private_key)
         self.pending_deposits = {}  # Dict mapping tokenId to deposit txn in Rootchain contract
         self.deposits = {}  # Dict mapping tokenId to last known txn
         self.transactions = [TokenToTxnHashIdSMT()]  # Ordered list of block txn dbs
@@ -135,7 +135,7 @@ class Operator:
         # Submit the roothash for transactions
         self._rootchain.functions.\
                 submitBlock(self.transactions[-1].root_hash).\
-                transact({'from':self._acct, 'gas':1000000})
+                transact({'from':self._acct.address, 'gas':1000000})
         # Reset transactions db
         self.transactions.append(TokenToTxnHashIdSMT())
 
