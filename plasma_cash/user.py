@@ -16,13 +16,9 @@ from .operator import Operator
 from .token import (
     Token,
     TokenStatus,
-    Transaction,
 )
 
-
-def to_bytes32(val: int) -> bytes:
-    assert 0 <= val < 2**256, "Value out of range!"
-    return val.to_bytes(32, byteorder='big')
+from .transaction import Transaction
 
 
 class User:

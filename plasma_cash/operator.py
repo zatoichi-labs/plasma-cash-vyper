@@ -9,7 +9,7 @@ from eth_utils import to_bytes
 from web3 import Web3
 
 from .contracts import rootchain_interface
-from .token import Transaction
+from .transaction import Transaction
 
 
 def to_bytes32(val: int) -> bytes:
