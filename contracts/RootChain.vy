@@ -157,18 +157,14 @@ def deposit(
     assert self.childChain_len == txn.prevBlkNum
 
     # Verify this transaction was signed by message sender
-    txn_hash: bytes32 = keccak256(
+    unsignedTxnHash: bytes32 = keccak256(
             concat(
-                convert(txn.prevBlkNum, bytes32),
-                convert(txn.tokenId, bytes32),
-                convert(txn.newOwner, bytes32),
-                convert(txn.sigV, bytes32),
-                convert(txn.sigR, bytes32),
-                convert(txn.sigS, bytes32),
+                    convert(txn.prevBlkNum, bytes32),
+                    convert(txn.tokenId,    bytes32),
+                    convert(txn.newOwner,   bytes32),
+                )
             )
-        )
-    # FIXME Hack until signatures work
-    assert msg.sender == convert(convert(txn.sigV, bytes32), address)#ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
+    assert msg.sender == ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
 
     # Transfer the token to this contract (also verifies custody)
     self.token.safeTransferFrom(msg.sender, self, txn.tokenId)
@@ -277,8 +273,14 @@ def startExit(
         self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Validate signer of txn was the receiver of prevTxn
-    # FIXME Hack until signatures work
-    txn_signer: address = convert(convert(txn.sigV, bytes32), address)#ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
+    unsignedTxnHash: bytes32 = keccak256(
+            concat(
+                    convert(txn.prevBlkNum, bytes32),
+                    convert(txn.tokenId,    bytes32),
+                    convert(txn.newOwner,   bytes32),
+                )
+            )
+    txn_signer: address = ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
     assert prevTxn.newOwner == txn_signer
 
     # Compute transaction hash (leaf of Merkle tree)
@@ -359,8 +361,14 @@ def challengeExit(
         self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Get signer of challenge txn
-    # FIXME Hack until signatures work
-    txn_signer: address = convert(convert(txn.sigV, bytes32), address)#ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
+    unsignedTxnHash: bytes32 = keccak256(
+            concat(
+                    convert(txn.prevBlkNum, bytes32),
+                    convert(txn.tokenId,    bytes32),
+                    convert(txn.newOwner,   bytes32),
+                )
+            )
+    txn_signer: address = ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
 
     # Challenge transaction was spent after the exit
     challengeAfter: bool = \
@@ -449,8 +457,14 @@ def respondChallenge(
         self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Get signer of response txn
-    # FIXME Hack until signatures work
-    txn_signer: address = convert(convert(txn.sigV, bytes32), address)#ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
+    unsignedTxnHash: bytes32 = keccak256(
+            concat(
+                    convert(txn.prevBlkNum, bytes32),
+                    convert(txn.tokenId,    bytes32),
+                    convert(txn.newOwner,   bytes32),
+                )
+            )
+    txn_signer: address = ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
 
     # Validate signer of response txn is the recipient of the challenge txn
     # NOTE txnBlkNum may need to be txn_prevBlkNum, not sure yet!
