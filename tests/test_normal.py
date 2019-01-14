@@ -69,8 +69,9 @@ def test_1trade_withdraw(w3, mine, operator, users):
     assert operator.is_tracking(t.uid)
 
     # Send it to the other user
-    u1.transfer(u2, t.uid)
+    u1.transfer(u2.address, t.uid)
     assert t not in u1.purse
+    u2.purse.append(t)  # FIXME Remove when messaging implementated
     assert t in u2.purse
 
     # Have to wait for the block to sync again

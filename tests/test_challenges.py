@@ -29,7 +29,8 @@ def test_challengeAfter(w3, mine, operator, rootchain_contract, users):
         u1.monitor()  # FIXME Remove when async
 
     # u1 gives token to u2
-    u1.transfer(u2, token.uid)
+    u1.transfer(u2.address, token.uid)
+    u2.purse.append(token)  # FIXME Remove when messaging implementated
     logger = rootchain_contract.events.BlockPublished.createFilter(fromBlock=w3.eth.blockNumber)
     while len(logger.get_all_entries()) < 2:
         mine()
@@ -44,7 +45,8 @@ def test_challengeAfter(w3, mine, operator, rootchain_contract, users):
     u2.purse.append(fake_token)
 
     # u2 sends the token to u3 (which is a withdrawal/spend conflict!)
-    u2.transfer(u3, fake_token.uid)
+    u2.transfer(u3.address, fake_token.uid)
+    u3.purse.append(fake_token)  # FIXME Remove when messaging implementated
     while len(logger.get_all_entries()) < 3:
         mine()
         operator.monitor()  # FIXME Remove when async
@@ -80,7 +82,8 @@ def test_challengeBetween(w3, mine, operator, rootchain_contract, users):
         u1.monitor()  # FIXME Remove when async
 
     # u1 gives token to u2
-    u1.transfer(u2, token.uid)
+    u1.transfer(u2.address, token.uid)
+    u2.purse.append(token)  # FIXME Remove when messaging implementated
     logger = rootchain_contract.events.BlockPublished.createFilter(fromBlock=w3.eth.blockNumber)
     while len(logger.get_all_entries()) < 2:
         mine()
@@ -92,7 +95,8 @@ def test_challengeBetween(w3, mine, operator, rootchain_contract, users):
     u1.purse.append(fake_token)
 
     # u1 sends u3 a double-spent coin
-    u1.transfer(u3, fake_token.uid)
+    u1.transfer(u3.address, fake_token.uid)
+    u3.purse.append(fake_token)  # FIXME Remove when messaging implementated
     while len(logger.get_all_entries()) < 3:
         mine()
         operator.monitor()  # FIXME Remove when async
@@ -133,23 +137,32 @@ def test_challengeBefore_invalidHistory(w3, mine, operator, rootchain_contract, 
 
     # u2 makes a fake copy of u1's token deposited to themselves
     prevBlkNum = token.history[-1].prevBlkNum
-    unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token.uid, u2._acct)
-    signature = (to_int(hexstr=u2._acct), 0, 0)#w3.eth.sign(u2._acct, unsigned_txn_hash)
-    invalid_transaction = Transaction(prevBlkNum, token.uid, u2._acct, *signature)
+    unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token.uid, u2.address)
+    signature = u2._acct.signHash(unsigned_txn_hash)
+    invalid_transaction = Transaction(
+                prevBlkNum,
+                token.uid,
+                u2.address,
+                signature['v'],
+                signature['r'],
+                signature['s'],
+            )
     operator.deposits[token.uid] = invalid_transaction  # operator colludes
 
     fake_token = Token(token.uid, status=token.status, history=[invalid_transaction])
     u2.purse.append(fake_token)
 
     # u2 sends it to u3 (who is colluding)
-    u2.transfer(u3, fake_token.uid)
+    u2.transfer(u3.address, fake_token.uid)
+    u3.purse.append(fake_token)  # FIXME Remove when messaging implementated
     logger = rootchain_contract.events.BlockPublished.createFilter(fromBlock=w3.eth.blockNumber)
     while len(logger.get_all_entries()) < 2:
         mine()
         operator.monitor()  # FIXME Remove when async
 
     # u3 sends it back
-    u3.transfer(u2, fake_token.uid)
+    u3.transfer(u2.address, fake_token.uid)
+    u2.purse.append(fake_token)  # FIXME Remove when messaging implementated
     while len(logger.get_all_entries()) < 3:
         mine()
         operator.monitor()  # FIXME Remove when async
@@ -199,20 +212,23 @@ def test_challengeBefore_validHistory(w3, mine, operator, rootchain_contract, us
         u1.monitor()  # FIXME Remove when async
 
     # u1 gives token to u2
-    u1.transfer(u2, token.uid)
+    u1.transfer(u2.address, token.uid)
+    u2.purse.append(token)  # FIXME Remove when messaging implementated
     logger = rootchain_contract.events.BlockPublished.createFilter(fromBlock=w3.eth.blockNumber)
     while len(logger.get_all_entries()) < 2:
         mine()
         operator.monitor()  # FIXME Remove when async
 
     # u2 has token, sends it to u3
-    u2.transfer(u3, token.uid)
+    u2.transfer(u3.address, token.uid)
+    u3.purse.append(token)  # FIXME Remove when messaging implementated
     while len(logger.get_all_entries()) < 3:
         mine()
         operator.monitor()  # FIXME Remove when async
 
     # u3 makes an valid transfer to u1
-    u3.transfer(u1, token.uid)
+    u3.transfer(u1.address, token.uid)
+    u1.purse.append(token)  # FIXME Remove when messaging implementated
     while len(logger.get_all_entries()) < 4:
         mine()
         operator.monitor()  # FIXME Remove when async

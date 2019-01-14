@@ -1,6 +1,8 @@
 import pytest
 import vyper
 
+from eth_account import Account
+from eth_tester.backends.pyevm.main import get_default_account_keys
 
 from plasma_cash import (
     Operator,
@@ -8,6 +10,10 @@ from plasma_cash import (
     Token,
     User,
 )
+
+
+DEFAULT_KEYS = get_default_account_keys()
+DEFAULT_ACCOUNTS = [Account.privateKeyToAccount(k).address for k in DEFAULT_KEYS]
 
 
 with open('contracts/Token.vy', 'r') as f:
@@ -64,7 +70,9 @@ def rootchain_contract(w3, token_contract):
 
 @pytest.fixture
 def operator(w3, rootchain_contract):
-    return Operator(w3, rootchain_contract.address, w3.eth.accounts[0])
+    for i, a in enumerate(w3.eth.accounts):
+        assert DEFAULT_ACCOUNTS[i] == a
+    return Operator(w3, rootchain_contract.address, DEFAULT_KEYS[0])
 
 
 @pytest.fixture
@@ -72,8 +80,9 @@ def users(w3, token_contract, rootchain_contract, operator):
     # Mint the first user a token
     t = Token(123)
     token_contract.functions.mint(w3.eth.accounts[1], t.uid).transact()
+
     # Create the users
-    users = [User(w3, token_contract.address, rootchain_contract.address, operator, a)
-             for a in w3.eth.accounts[1:]]  # Skip operator account
+    users = [User(w3, token_contract.address, rootchain_contract.address, operator, k)
+             for k in DEFAULT_KEYS[1:]]  # Skip operator account
     users[0].purse.append(t)
     return users
