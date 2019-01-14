@@ -1,4 +1,5 @@
 from eth_abi import encode_single
+from eth_account import Account
 from eth_utils import keccak, to_checksum_address
 
 
@@ -26,8 +27,8 @@ class Transaction:
 
     @property
     def sender(self):
-        # FIXME do ECRecover on signature instead of this hack
-        return to_checksum_address(self.signature[0])
+        data = encode_single('(uint256,uint256,address)', (self.prevBlkNum, self.tokenId, self.newOwner))
+        return Account.recoverHash(keccak(data), vrs=self.signature)
 
     @property
     def to_tuple(self):
