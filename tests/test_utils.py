@@ -9,6 +9,8 @@ def to_bytes32(val: int) -> bytes:
     assert 0 <= val < 2**256, "Value out of range!"
     return val.to_bytes(32, byteorder='big')
 
+import pytest
+@pytest.mark.skip(reason="Takes a long time...")
 @given(
     tokenId=st.integers(min_value=0, max_value=2**256-1),
     txnHash=st.binary(min_size=32, max_size=32),
