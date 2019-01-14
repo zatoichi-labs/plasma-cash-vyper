@@ -137,9 +137,15 @@ class Operator:
         self.pending_deposits = {}
 
         # Submit the roothash for transactions
-        self._rootchain.functions.\
-                submitBlock(self.transactions[-1].root_hash).\
-                transact({'from':self._acct.address, 'gas':1000000})
+        txn = self._rootchain.functions.submitBlock(
+            self.transactions[-1].root_hash
+        ).buildTransaction({
+            'nonce': self._w3.eth.getTransactionCount(self.address)
+        })
+        signed_txn = self._acct.signTransaction(txn)
+        txn_hash = self._w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
+
         # Reset transactions db
         self.transactions.append(TokenToTxnHashIdSMT())
 
