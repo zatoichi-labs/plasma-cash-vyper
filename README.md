@@ -70,11 +70,9 @@ the Plasmachain network, under which the Tokens that were deposited on the
 Rootchain are allowed to traded according to the rules in the smart contract
 that governs the Plasma system.
 
-There are two parameters in the Plasma Cash system; the "Plasma Sync Period",
-which corresponds to the period of time within which a single block should
-be published, and the "Plasma Exit Period", which corresponds to the period
-of time in which challenges to an exit can be processed before a Token can be
-withdrawn from the Rootchain contract.
+There is one parameter in the Plasma Cash system: the "Plasma Exit Period",
+which corresponds to the period of time in which challenges to an exit can be
+processed before a Token can be withdrawn from the Rootchain contract.
 
 ---
 
@@ -101,21 +99,32 @@ within the network.
 
 ### Users
 
-1. A User can deposit a Token into the Rootchain contract, and have it be made
-   made available to trade in the Plasma chain within 1 Plasma Sync Period
-2. A User must be able to trade Tokens within the Plasma chain, and observe that
+1. `@req u1`
+   A User can deposit a Token into the Rootchain contract, and have it be made
+   made available to trade immediately
+2. `@req u2`
+   A User must be able to trade Tokens within the Plasma chain, and observe that
    trade reflected in the uploaded Merkle Tree root that the operator maintains
-3. A User should track history of owned Tokens
-4. A User must validate history of Tokens they receive from other Users
-5. A User must be able to withdraw Tokens they own, and reclaim them within the
+3. `@req u3`
+   A User should track history of owned Tokens
+4. `@req u4`
+   A User must validate history of Tokens they receive from other Users
+5. `@req u5`
+   A User must be able to withdraw Tokens they own, and reclaim them within the
    Plasma exit period
-6. A User must challenge all exits that violate their current token ownership
-7. A User should challenge any exits that violate other's token ownership history
+6. `@req u6`
+   A User must challenge all exits that violate their current token ownership
+7. `@req u7`
+   A User should challenge any exits that violate other's token ownership history
 
 ### Operators
 
-1. The Operator must locally store all transaction information for the Plasmachain
-2. The Operator must upload a Merkle Tree root summarizing all transactions at most
+1. `@req o1`
+   The Operator must locally store all transaction information for the Plasmachain
+2. `@req o2`
+   The Operator must upload a Merkle Tree root summarizing all transactions at most
    once within the Plasma Sync Period
-3. The Operator should service User requests to obtain information about their Tokens
-4. The Operator should challenge Token all exits that are invalid
+3. `@req o3`
+   The Operator should service User requests to obtain information about their Tokens
+4. `@req o4`
+   The Operator should challenge Token all exits that are invalid
