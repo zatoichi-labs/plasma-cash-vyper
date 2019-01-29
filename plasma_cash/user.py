@@ -92,7 +92,6 @@ class User:
         txn = self._rootchain.functions.deposit(
             *transaction.to_tuple
         ).buildTransaction({
-            'gas': 200000,  # FIXME Unsue why estimateGas fails
             'nonce': self._w3.eth.getTransactionCount(self.address),
         })
         signed_txn = self._acct.signTransaction(txn)
