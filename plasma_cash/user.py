@@ -7,6 +7,7 @@ from eth_utils import to_int
 from trie.smt import calc_root
 
 from web3 import Web3
+from web3.middleware.signing import construct_sign_and_send_raw_middleware
 
 from .contracts import (
     token_interface,
@@ -35,6 +36,10 @@ class User:
         self._rootchain = self._w3.eth.contract(rootchain_address, **rootchain_interface)
         self._operator = operator
         self._acct = Account.privateKeyToAccount(private_key)
+        # Allow web3 to autosign with account
+        middleware = construct_sign_and_send_raw_middleware(private_key)
+        self._w3.middleware_stack.add(middleware)
+        # Load Tokens
         self.purse = purse if purse else []
         # Add listeners (dict of filters: callbacks)
         self.listeners = {}
@@ -62,40 +67,32 @@ class User:
 
         # Allow the rootchain to pull all our deposits using safeTransferFrom
         if not self._token.functions.isApprovedForAll(
-            self._acct.address,
+            self.address,
             self._rootchain.address,
         ).call():
-            txn = self._token.functions.setApprovalForAll(
+            txn_hash = self._token.functions.setApprovalForAll(
                 self._rootchain.address,
                 True,
-            ).buildTransaction({
-                'nonce': self._w3.eth.getTransactionCount(self.address),
-            })
-            signed_txn = self._acct.signTransaction(txn)
-            txn_hash = self._w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+            ).transact({'from': self.address})
             self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
         # Create the deposit transaction for it (from user to user in current block)
         prevBlkNum = self._rootchain.functions.childChain_len().call()
-        unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token_uid, self._acct.address)
+        unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token_uid, self.address)
         signature = self._acct.signHash(unsigned_txn_hash)
         transaction = Transaction(
                 prevBlkNum,
                 token_uid,
-                self._acct.address,
+                self.address,
                 signature['v'],
                 signature['r'],
                 signature['s'],
             )
 
         # Deposit on the rootchain
-        txn = self._rootchain.functions.deposit(
+        txn_hash = self._rootchain.functions.deposit(
             *transaction.to_tuple
-        ).buildTransaction({
-            'nonce': self._w3.eth.getTransactionCount(self.address),
-        })
-        signed_txn = self._acct.signTransaction(txn)
-        txn_hash = self._w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        ).transact({'from': self.address})
         self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
         # Also log when we deposited it and add the deposit to our history
@@ -154,12 +151,7 @@ class User:
     def withdraw(self, token_uid):
         token = next((t for t in self.purse if t.uid == token_uid), None)
         if token.status is TokenStatus.DEPOSIT:
-            txn = self._rootchain.functions.withdraw(token_uid).buildTransaction({
-                'gas': 200000,  # FIXME Unsue why estimateGas fails
-                'nonce': self._w3.eth.getTransactionCount(self.address),
-            })
-            signed_txn = self._acct.signTransaction(txn)
-            txn_hash = self._w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+            txn_hash = self._rootchain.functions.withdraw(token_uid).transact({'from': self.address})
             self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
             self.tokens_in_deposit.remove(token_uid)
@@ -175,17 +167,12 @@ class User:
             exitProof = self._operator.get_branch(exit.tokenId, exit.prevBlkNum)
 
             # We can start the exit now
-            txn = self._rootchain.functions.startExit(
+            txn_hash = self._rootchain.functions.startExit(
                 *parent.to_tuple,
                 parentProof,
                 *exit.to_tuple,
                 exitProof,
-            ).buildTransaction({
-                'gas': 2000000,  # FIXME Unsue why estimateGas fails
-                'nonce': self._w3.eth.getTransactionCount(self.address),
-            })
-            signed_txn = self._acct.signTransaction(txn)
-            txn_hash = self._w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+            ).transact({'from': self.address})
             self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
             token.set_in_withdrawal()
@@ -195,12 +182,7 @@ class User:
 
     def finalize(self, token_uid):
         token = next((t for t in self.purse if t.uid == token_uid), None)
-        txn = self._rootchain.functions.finalizeExit(token_uid).buildTransaction({
-            'gas': 200000,  # FIXME Unsue why estimateGas fails
-            'nonce': self._w3.eth.getTransactionCount(self.address),
-        })
-        signed_txn = self._acct.signTransaction(txn)
-        txn_hash = self._w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        txn_hash = self._rootchain.functions.finalizeExit(token_uid).transact({'from': self.address})
         receipt = self._w3.eth.waitForTransactionReceipt(txn_hash)
         if self._rootchain.events.ExitFinished(receipt).event_name == 'ExitFinished':
             token.finalize_withdrawal()

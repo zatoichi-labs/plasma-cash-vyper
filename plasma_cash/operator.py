@@ -7,6 +7,7 @@ from eth_account import Account
 from eth_utils import to_bytes
 
 from web3 import Web3
+from web3.middleware.signing import construct_sign_and_send_raw_middleware
 
 from .contracts import rootchain_interface
 from .transaction import Transaction
@@ -45,6 +46,10 @@ class Operator:
         self._w3 = w3
         self._rootchain = self._w3.eth.contract(rootchain_address, **rootchain_interface)
         self._acct = Account.privateKeyToAccount(private_key)
+        # Allow web3 to autosign with account
+        middleware = construct_sign_and_send_raw_middleware(private_key)
+        self._w3.middleware_stack.add(middleware)
+        # Set up dats structures
         self.pending_deposits = {}  # Dict mapping tokenId to deposit txn in Rootchain contract
         self.deposits = {}  # Dict mapping tokenId to last known txn
         self.transactions = [TokenToTxnHashIdSMT()]  # Ordered list of block txn dbs
@@ -137,13 +142,9 @@ class Operator:
         self.pending_deposits = {}
 
         # Submit the roothash for transactions
-        txn = self._rootchain.functions.submitBlock(
+        txn_hash = self._rootchain.functions.submitBlock(
             self.transactions[-1].root_hash
-        ).buildTransaction({
-            'nonce': self._w3.eth.getTransactionCount(self.address)
-        })
-        signed_txn = self._acct.signTransaction(txn)
-        txn_hash = self._w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        ).transact({'from': self.address})
         self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
         # Reset transactions db
