@@ -34,7 +34,7 @@ setup(
     description="""Python implementation of Plasma Cash. Contracts in Vyper.""",
     long_description_markdown_filename='README.md',
     author='@fubloubu',
-    url='https://github.com/GunClear/plasma-cash-vyper',
+    url='https://github.com/zatoichi-labs/plasma-cash-vyper',
     include_package_data=True,
     py_modules=['plasma_cash'],
     python_requires='>=3.5.3,<4',
