@@ -38,7 +38,7 @@ class User:
         self._acct = Account.privateKeyToAccount(private_key)
         # Allow web3 to autosign with account
         middleware = construct_sign_and_send_raw_middleware(private_key)
-        self._w3.middleware_stack.add(middleware)
+        self._w3.middleware_onion.add(middleware)
         # Load Tokens
         self.purse = purse if purse else []
         # Add listeners (dict of filters: callbacks)

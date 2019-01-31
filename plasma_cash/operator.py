@@ -48,7 +48,7 @@ class Operator:
         self._acct = Account.privateKeyToAccount(private_key)
         # Allow web3 to autosign with account
         middleware = construct_sign_and_send_raw_middleware(private_key)
-        self._w3.middleware_stack.add(middleware)
+        self._w3.middleware_onion.add(middleware)
         # Set up dats structures
         self.pending_deposits = {}  # Dict mapping tokenId to deposit txn in Rootchain contract
         self.deposits = {}  # Dict mapping tokenId to last known txn

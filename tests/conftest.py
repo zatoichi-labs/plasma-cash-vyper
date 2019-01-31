@@ -27,7 +27,7 @@ def set_challenge_period(code, new_param):
     c = code.replace("""
 CHALLENGE_PERIOD: constant(timedelta) = 604800  # 7 days (7*24*60*60 secs)
 """, """
-CHALLENGE_PERIOD: constant(timedelta) = {0}  # {0} secs (NOTE monkeypatched!)
+CHALLENGE_PERIOD: constant(timedelta) = {0}  # secs (NOTE monkeypatched!)
 """.format(new_param))
     return c
 
@@ -48,7 +48,7 @@ def w3():
 @pytest.fixture
 def mine(w3):
     def _mine(numBlocks=1):
-        w3.providers[0].ethereum_tester.mine_blocks(numBlocks)
+        w3.provider.ethereum_tester.mine_blocks(numBlocks)
     return _mine
 
 
