@@ -40,8 +40,7 @@ setup(
     python_requires='>=3.5.3,<4',
     install_requires=[
         "eth-utils>=1.3.0,<2.0.0",
-        "git+https://github.com/ethereum/py-trie.git",
-        #"trie>1.3.8,<2.0.0",
+        "trie>=1.3.8,<2.0.0",
         "rlp>=1,<2",
         "web3>=4.8.1",
         "vyper>=0.1.0b6",

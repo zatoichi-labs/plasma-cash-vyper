@@ -1,4 +1,4 @@
 pytest
 git+https://github.com/ethereum/py-trie.git
-web3
+web3[tester]>=5.0.0a4
 vyper
