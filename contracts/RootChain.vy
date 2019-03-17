@@ -99,7 +99,7 @@ CHALLENGE_PERIOD: constant(timedelta) = 604800  # 7 days (7*24*60*60 secs)
 @public
 def __init__(_token: address):
     self.authority = msg.sender
-    self.token = _token
+    self.token = ERC721(_token)
 
 
 # UTILITY FUNCTIONS #
