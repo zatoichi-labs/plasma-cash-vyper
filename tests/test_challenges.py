@@ -54,7 +54,7 @@ def test_challengeAfter(w3, mine, operator, rootchain_contract, users):
     # We can submit last transaction as a challenge to withdrawal
     logger = rootchain_contract.events.ExitCancelled.createFilter(fromBlock=w3.eth.blockNumber)
     rootchain_contract.functions.challengeExit(
-            *fake_token.history[-1].to_tuple,
+            fake_token.history[-1].to_tuple,
             operator.get_branch(fake_token.uid, fake_token.history[-1].prevBlkNum),
             fake_token.history[-1].prevBlkNum,
         ).transact()
@@ -107,7 +107,7 @@ def test_challengeBetween(w3, mine, operator, rootchain_contract, users):
     # We can submit the transaction before the doublespend as a challenge
     logger = rootchain_contract.events.ExitCancelled.createFilter(fromBlock=w3.eth.blockNumber)
     rootchain_contract.functions.challengeExit(
-            *token.history[-1].to_tuple,
+            token.history[-1].to_tuple,
             operator.get_branch(token.uid, token.history[-1].prevBlkNum),
             token.history[-1].prevBlkNum,
         ).transact()
@@ -173,7 +173,7 @@ def test_challengeBefore_invalidHistory(w3, mine, operator, rootchain_contract, 
     # Someone challenges that with the correct history
     logger = rootchain_contract.events.ChallengeStarted.createFilter(fromBlock=w3.eth.blockNumber)
     rootchain_contract.functions.challengeExit(
-            *token.history[-1].to_tuple,
+            token.history[-1].to_tuple,
             operator.get_branch(token.uid, token.history[-1].prevBlkNum),
             token.history[-1].prevBlkNum,
         ).transact()
@@ -238,7 +238,7 @@ def test_challengeBefore_validHistory(w3, mine, operator, rootchain_contract, us
     # Someone challenges that with older history
     logger = rootchain_contract.events.ChallengeStarted.createFilter(fromBlock=w3.eth.blockNumber)
     rootchain_contract.functions.challengeExit(
-            *token.history[0].to_tuple,
+            token.history[0].to_tuple,
             operator.get_branch(token.uid, token.history[0].prevBlkNum),
             token.history[0].prevBlkNum,
         ).transact()
@@ -251,7 +251,7 @@ def test_challengeBefore_validHistory(w3, mine, operator, rootchain_contract, us
     print(token.history[0].newOwner, token.history[1].sender)
     logger = rootchain_contract.events.ChallengeCancelled.createFilter(fromBlock=w3.eth.blockNumber)
     rootchain_contract.functions.respondChallenge(
-            *token.history[1].to_tuple,
+            token.history[1].to_tuple,
             operator.get_branch(token.uid, token.history[1].prevBlkNum),
             token.history[0].prevBlkNum,
         ).transact()

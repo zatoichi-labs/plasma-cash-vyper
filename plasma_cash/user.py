@@ -91,7 +91,7 @@ class User:
 
         # Deposit on the rootchain
         txn_hash = self._rootchain.functions.deposit(
-            *transaction.to_tuple
+            transaction.to_tuple
         ).transact({'from': self.address})
         self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
@@ -168,9 +168,9 @@ class User:
 
             # We can start the exit now
             txn_hash = self._rootchain.functions.startExit(
-                *parent.to_tuple,
+                parent.to_tuple,
                 parentProof,
-                *exit.to_tuple,
+                exit.to_tuple,
                 exitProof,
             ).transact({'from': self.address})
             self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
