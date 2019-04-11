@@ -41,9 +41,11 @@ setup(
     python_requires='>=3.5.3,<4',
     install_requires=[
         "eth-utils>=1.3.0,<2.0.0",
-        "git+https://github.com/ethereum/py-trie.git",
         "web3>=5.0.0a7",
         "vyper>=0.1.0b8",
+    ],
+    dependency_links=[
+        "https://github.com/ethereum/py-trie/tarball/master#egg=trie",
     ],
     extras_require=extras_require,
     license="MIT",
