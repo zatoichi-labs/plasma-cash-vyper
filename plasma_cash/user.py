@@ -78,16 +78,15 @@ class User:
 
         # Create the deposit transaction for it (from user to user in current block)
         prevBlkNum = self._rootchain.functions.childChain_len().call()
-        unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token_uid, self.address)
-        signature = self._acct.signHash(unsigned_txn_hash)
         transaction = Transaction(
+                self._w3.eth.chainId,
+                self._rootchain.address,
                 prevBlkNum,
                 token_uid,
-                self.address,
-                signature['v'],
-                signature['r'],
-                signature['s'],
+                self.address
             )
+        signature = self._acct.signHash(transaction.msg_hash)
+        transaction.add_signature(signature)
 
         # Deposit on the rootchain
         txn_hash = self._rootchain.functions.deposit(
@@ -117,16 +116,15 @@ class User:
         token = next((t for t in self.purse if t.uid == token_uid), None)
         # TODO Handle ETH transfer
         prevBlkNum = self._rootchain.functions.childChain_len().call()
-        unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token_uid, user_address)
-        signature = self._acct.signHash(unsigned_txn_hash)
         transaction = Transaction(
+                self._w3.eth.chainId,
+                self._rootchain.address,
                 prevBlkNum,
                 token_uid,
-                user_address,
-                signature['v'],
-                signature['r'],
-                signature['s'],
+                user_address
             )
+        signature = self._acct.signHash(transaction.msg_hash)
+        transaction.add_signature(signature)
         token.addTransaction(transaction)  # Not needed with messaging
         # Block until user approces our transfer
         # TODO Make this async
