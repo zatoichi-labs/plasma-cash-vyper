@@ -1,3 +1,4 @@
+import json
 from eth_abi import encode_single
 from eth_account import Account
 from eth_account.messages import defunct_hash_message
@@ -39,8 +40,8 @@ class Transaction:
         self.signature = signature
 
     @property
-    def _eip712_msg(self):
-        return {
+    def json(self):
+        return json.dumps({
             "types": {
                 "EIP712Domain": [
                     {"name": "name", "type": "string"},
@@ -66,12 +67,12 @@ class Transaction:
                 "tokenId": self.tokenId,
                 "prevBlkNum": self.prevBlkNum
             }
-        }
+        })
 
     @property
     def msg_hash(self):
         """ This is the message hash we sign for L2 transfers """
-        return defunct_hash_message(text=self._eip712_msg, signature_version=b'\x01')
+        return defunct_hash_message(text=self.json, signature_version=b'\x01')
 
     @property
     def signer(self):
