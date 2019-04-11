@@ -85,8 +85,8 @@ class User:
                 token_uid,
                 self.address
             )
-        signature = self._acct.signHash(transaction.msg_hash)
-        transaction.add_signature(signature)
+        signed = self._acct.signHash(transaction.msg_hash)
+        transaction.add_signature(signed.signature)
 
         # Deposit on the rootchain
         txn_hash = self._rootchain.functions.deposit(
@@ -123,8 +123,8 @@ class User:
                 token_uid,
                 user_address
             )
-        signature = self._acct.signHash(transaction.msg_hash)
-        transaction.add_signature(signature)
+        signed = self._acct.signHash(transaction.msg_hash)
+        transaction.add_signature(signed.signature)
         token.addTransaction(transaction)  # Not needed with messaging
         # Block until user approces our transfer
         # TODO Make this async
