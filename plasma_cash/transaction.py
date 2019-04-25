@@ -6,15 +6,15 @@ from eth_utils import keccak, to_checksum_address
 
 
 def is_signature(val):
-    if not isinstance(signature, tuple):
+    if not isinstance(val, tuple):
         return False
-    if len(signature) != 3:
+    if len(val) != 3:
         return False
-    if not isinstance(signature[0], int):
+    if not isinstance(val[0], int):
         return False
-    if not isinstance(signature[1], int):
+    if not isinstance(val[1], int):
         return False
-    if not isinstance(signature[2], int):
+    if not isinstance(val[2], int):
         return False
     return True
 
