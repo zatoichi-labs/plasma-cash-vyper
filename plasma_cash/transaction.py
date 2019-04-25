@@ -72,7 +72,7 @@ class Transaction:
     @property
     def msg_hash(self):
         """ This is the message hash we sign for L2 transfers """
-        return defunct_hash_message(text=self.json, signature_version=b'\x01')
+        return defunct_hash_message(text=self.json)#, signature_version=b'\x01')  # TODO unknown problem
 
     @property
     def signer(self):
