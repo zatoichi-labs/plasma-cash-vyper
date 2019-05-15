@@ -1,8 +1,7 @@
-import json
 from eth_abi import encode_single
 from eth_account import Account
-from eth_account.messages import defunct_hash_message
-from eth_utils import keccak, to_checksum_address
+from eth_account.messages import encode_structured_data, hash_eip712_message
+from eth_utils import keccak, to_checksum_address, to_int
 
 
 def is_signature(val):
@@ -40,8 +39,8 @@ class Transaction:
         self.signature = signature
 
     @property
-    def json(self):
-        return json.dumps({
+    def struct(self):
+        return {
             "types": {
                 "EIP712Domain": [
                     {"name": "name", "type": "string"},
@@ -59,7 +58,7 @@ class Transaction:
             "domain": {
                 "name": "Plasma Cash",
                 "version": "1",
-                "chainId": self.chain_id,
+                "chainId": to_int(hexstr=self.chain_id),
                 "verifyingContract": self.contract_address
             },
             "message": {
@@ -67,18 +66,22 @@ class Transaction:
                 "tokenId": self.tokenId,
                 "prevBlkNum": self.prevBlkNum
             }
-        })
+        }
+
+    @property
+    def msg(self):
+        """ This is the message hash we sign for L2 transfers """
+        return encode_structured_data(self.struct)
 
     @property
     def msg_hash(self):
-        """ This is the message hash we sign for L2 transfers """
-        return defunct_hash_message(text=self.json)#, signature_version=b'\x01')  # TODO unknown problem
+        return hash_eip712_message(self.struct)
 
     @property
     def signer(self):
         """ Get the signing account for this transaction """
         assert self.signature is not None, "Transaction is not signed!"
-        return Account.recoverHash(self.msg_hash, vrs=self.signature)
+        return Account.recover_message(self.msg, vrs=self.signature)
 
     @property
     def to_tuple(self):
