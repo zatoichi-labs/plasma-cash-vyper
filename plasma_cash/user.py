@@ -87,6 +87,12 @@ class User:
             )
         signed = self._acct.sign_message(transaction.msg)
         transaction.add_signature((signed.v, signed.r, signed.s))
+        expected_hash = self._rootchain.functions._getTransactionHash(transaction.to_tuple).call()
+        # NOTE: Vyper cannot produce the correct hash here because of the lack of abi.encode
+        assert transaction.msg_hash == expected_hash, \
+                "EIP-712 Message Hash not correct!\n\t'0x{}' != '0x{}'".format(
+                        transaction.msg_hash.hex(), expected_hash.hex()
+                    )
 
         # Deposit on the rootchain
         txn_hash = self._rootchain.functions.deposit(

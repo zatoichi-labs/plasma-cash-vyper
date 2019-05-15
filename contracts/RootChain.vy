@@ -99,6 +99,8 @@ challenges: map(uint256, map(uint256, Challenge))
 
 # Constants
 CHALLENGE_PERIOD: constant(timedelta) = 604800  # 7 days (7*24*60*60 secs)
+CHAIN_ID: constant(uint256) = 61  # Must set dyanamically for chain being deployed to
+# NOTE: CHAIN_ID must be monkeypatched for testing/testnets
 
 
 # Constructor
@@ -132,25 +134,26 @@ def _getMerkleRoot(
 @constant
 @public
 def _getTransactionHash(txn: Transaction) -> bytes32:
-    domainSeparatorHash: bytes32 = keccak256(concat(
+    # TODO: Use Vyper API from #1020 for this
+    domainSeparatorHash: bytes32 = keccak256(abi.encode(
             keccak256(
                 "EIP712Domain(name string,version string,chainId uint256,verifyingContract address)"
             ),
-            keccak256("Plasma Cash"),
-            keccak256("1"),
-            convert(3, bytes32),  # TODO EIP-1344
-            convert(self, bytes32)
+            keccak256("Plasma Cash"),  # EIP712 Domain: name
+            keccak256("1"),            # EIP712 Domain: version
+            CHAIN_ID,                  # EIP712 Domain: chainId (TODO: use EIP-1344)
+            self                       # EIP712 Domain: verifyingContract
         ))
-    dataHash: bytes32 = keccak256(concat(
-            convert(txn.newOwner, bytes32),
-            convert(txn.tokenId, bytes32),
-            convert(txn.prevBlkNum, bytes32)
+    unsignedMsgHash: bytes32 = keccak256(abi.encode(
+            txn.newOwner,
+            txn.tokenId,
+            txn.prevBlkNum
         ))
-    return keccak256(concat(
+    return keccak256(abi.encode(
             b"\x01",
             domainSeparatorHash,
             keccak256("Transaction(newOwner address,tokenId uint256,prevBlkNum uint256)"),
-            dataHash,
+            unsignedMsgHash,
         ))
 
 
