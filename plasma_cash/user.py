@@ -90,7 +90,8 @@ class User:
 
         # Deposit on the rootchain
         txn_hash = self._rootchain.functions.deposit(
-            transaction.to_tuple
+            self.address,
+            transaction.to_tuple,
         ).transact({'from': self.address})
         self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 

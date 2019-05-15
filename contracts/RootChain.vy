@@ -158,32 +158,35 @@ def submitBlock(blkRoot: bytes32):
 
 
 @public
-def deposit(txn: Transaction):
+def deposit(
+    _from: address,
+    _txn: Transaction
+):
     # Verify block number is current block
-    assert self.childChain_len == txn.prevBlkNum
+    assert self.childChain_len == _txn.prevBlkNum
 
     # Verify this transaction was signed by message sender
-    unsignedTxnHash: bytes32 = self._getTransactionHash(txn)
-    assert msg.sender == ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
+    txnHash: bytes32 = self._getTransactionHash(_txn)
+    assert _from == ecrecover(txnHash, _txn.sigV, _txn.sigR, _txn.sigS)
 
     # Transfer the token to this contract (also verifies custody)
-    self.token.safeTransferFrom(msg.sender, self, txn.tokenId)
+    self.token.safeTransferFrom(_from, self, _txn.tokenId)
 
     # Allow recipient of deposit to withdraw the token
     # (No other spends can happen until confirmed)
-    self.deposits[txn.tokenId] = Deposit({
-        depositor: txn.newOwner,
-        depositBlk: txn.prevBlkNum,
+    self.deposits[_txn.tokenId] = Deposit({
+        depositor: _txn.newOwner,
+        depositBlk: _txn.prevBlkNum,
     })
 
     # NOTE: This will signal to the Plasma Operator to
     #       accept the deposit into the Child Chain
-    log.DepositAdded(txn.prevBlkNum,
-                     txn.tokenId,
-                     txn.newOwner,
-                     txn.sigV,
-                     txn.sigR,
-                     txn.sigS)
+    log.DepositAdded(_txn.prevBlkNum,
+                     _txn.tokenId,
+                     _txn.newOwner,
+                     _txn.sigV,
+                     _txn.sigR,
+                     _txn.sigS)
 
 
 # This will be the callback that token.safeTransferFrom() executes
@@ -192,8 +195,13 @@ def onERC721Received(
     operator: address,
     _from: address,
     _tokenId: uint256,
-    _data: bytes[1024],
+    _data: bytes[149],  # Transaction struct is 149 bytes in size
 ) -> bytes32:
+    # TODO: Add once #1406 implemented
+    #assert operator == self.authority or operator == _from
+    #txn: Transaction = abi.decode(_data, [Transaction])
+    #assert _tokenId == txn.tokenId
+    #self.deposit(_from, txn)
     # We must return the method_id of this function so safeTransferFrom works
     return method_id(
             "onERC721Received(address,address,uint256,bytes)", bytes32
