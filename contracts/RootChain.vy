@@ -80,14 +80,20 @@ ChallengeCancelled: event({
 # Storage
 authority: address
 token: public(ERC721)
-# Simulates stack data structure
+
+# TxnBlkNum => BlkHash
+# (Simulates stack data structure)
 childChain: public(map(uint256, bytes32))
 childChain_len: public(uint256)
-# tokenId => Deposit
+
+# TokenId => Deposit
 deposits: public(map(uint256, Deposit))
-# tokenId => Exit (only one exit per tokenId allowed)
+
+# TokenId => Exit (only one exit per tokenId allowed)
 exits: map(uint256, Exit)
-# tokenId => txnBlkNum => Challenge (multiple challenges allowed)
+
+# TokenId => TxnBlkNum => Challenge
+# (multiple challenges allowed, but only one per block)
 challenges: map(uint256, map(uint256, Challenge))
 
 
