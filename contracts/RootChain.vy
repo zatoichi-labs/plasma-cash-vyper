@@ -239,37 +239,18 @@ def startExit(
     assert txn.newOwner == msg.sender
 
     # Compute transaction hash (leaf of Merkle tree)
-    txnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                    convert(txn.sigV, bytes32),
-                    convert(txn.sigR, bytes32),
-                    convert(txn.sigS, bytes32),
-                )
-            )
+    txnHash: bytes32 = self._getTransactionHash(txn)
 
     # Validate inclusion of txn in merkle root prior to exit
     assert self.childChain[txn.prevBlkNum] == \
         self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Validate signer of txn was the receiver of prevTxn
-    unsignedTxnHash: bytes32 = self._getTransactionHash(txn)
-    txn_signer: address = ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
+    txn_signer: address = ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
     assert prevTxn.newOwner == txn_signer
 
     # Compute transaction hash (leaf of Merkle tree)
-    prevTxnHash: bytes32 = keccak256(
-            concat(
-                    convert(prevTxn.prevBlkNum, bytes32),
-                    convert(prevTxn.tokenId,    bytes32),
-                    convert(prevTxn.newOwner,   bytes32),
-                    convert(prevTxn.sigV, bytes32),
-                    convert(prevTxn.sigR, bytes32),
-                    convert(prevTxn.sigS, bytes32),
-                )
-            )
+    prevTxnHash: bytes32 = self._getTransactionHash(prevTxn)
 
     # Validate inclusion of prevTxn in merkle root prior to txn
     assert self.childChain[prevTxn.prevBlkNum] == \
@@ -305,24 +286,14 @@ def challengeExit(
     assert self.exits[txn.tokenId].txn.tokenId == txn.tokenId
 
     # Compute transaction hash (leaf of Merkle tree)
-    txnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                    convert(txn.sigV, bytes32),
-                    convert(txn.sigR, bytes32),
-                    convert(txn.sigS, bytes32),
-                )
-            )
+    txnHash: bytes32 = self._getTransactionHash(txn)
 
     # Validate inclusion of txn in merkle root at challenge
     assert self.childChain[txnBlkNum] == \
         self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Get signer of challenge txn
-    unsignedTxnHash: bytes32 = self._getTransactionHash(txn)
-    txn_signer: address = ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
+    txn_signer: address = ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
 
     # Challenge transaction was spent after the exit
     challengeAfter: bool = \
@@ -378,16 +349,7 @@ def respondChallenge(
     assert challenge.txn.prevBlkNum < txn.prevBlkNum
 
     # Compute transaction hash (leaf of Merkle tree)
-    txnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                    convert(txn.sigV, bytes32),
-                    convert(txn.sigR, bytes32),
-                    convert(txn.sigS, bytes32),
-                )
-            )
+    txnHash: bytes32 = self._getTransactionHash(txn)
 
     # Validate inclusion of txn in merkle root at response
     # NOTE txn_prevBlkNum may need to be txnBlkNum, not sure yet!
@@ -395,8 +357,7 @@ def respondChallenge(
         self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Get signer of response txn
-    unsignedTxnHash: bytes32 = self._getTransactionHash(txn)
-    txn_signer: address = ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
+    txn_signer: address = ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
 
     # Validate signer of response txn is the recipient of the challenge txn
     # NOTE txnBlkNum may need to be txn_prevBlkNum, not sure yet!
