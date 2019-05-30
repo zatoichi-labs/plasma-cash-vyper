@@ -35,7 +35,7 @@ class User:
         self._token = self._w3.eth.contract(token_address, **token_interface)
         self._rootchain = self._w3.eth.contract(rootchain_address, **rootchain_interface)
         self._operator = operator
-        self._acct = Account.privateKeyToAccount(private_key)
+        self._acct = Account.from_key(private_key)
         # Allow web3 to autosign with account
         middleware = construct_sign_and_send_raw_middleware(private_key)
         self._w3.middleware_onion.add(middleware)
