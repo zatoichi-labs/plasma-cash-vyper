@@ -99,7 +99,11 @@ class Operator:
 
     def addDeposit(self, log):
         if not self.is_tracking(log.args['tokenId']):
-            self.pending_deposits[log.args['tokenId']] = Transaction(**log.args)
+            self.pending_deposits[log.args['tokenId']] = Transaction(
+                    self._w3.eth.chainId,
+                    self._rootchain.address,
+                    **log.args,
+                )
 
     def remDeposit(self, log):
         if log.args['tokenId'] in self.pending_deposits.keys():

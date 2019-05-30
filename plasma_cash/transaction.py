@@ -25,12 +25,18 @@ class Transaction:
             contract_address,
             prevBlkNum,
             tokenId,
-            newOwner):
+            newOwner,
+            sigV=None,
+            sigR=None,
+            sigS=None):
         self.chain_id = chain_id
         self.contract_address = contract_address
         self.newOwner = newOwner
         self.tokenId = tokenId
         self.prevBlkNum = prevBlkNum
+        sig = (sigV, sigR, sigS)
+        if is_signature(sig):
+            self.signature = sig
         self.signature = None
 
     def add_signature(self, signature):
