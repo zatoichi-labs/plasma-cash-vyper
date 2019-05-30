@@ -1,4 +1,9 @@
 # Structs
+struct Block:
+    txnRoot: bytes32
+    number: uint256
+    chainId: uint256
+
 struct Deposit:
     depositor: address
     depositBlk: uint256
@@ -36,6 +41,8 @@ contract ERC721:
 # Operator Events
 BlockPublished: event({
         blkRoot: bytes32,
+        number: uint256,
+        chainId: uint256,
     })
 
 # Deposit Events
@@ -81,7 +88,7 @@ ChallengeCancelled: event({
 authority: address
 token: public(ERC721)
 # Simulates stack data structure
-childChain: public(map(uint256, bytes32))
+childChain: public(map(uint256, Block))
 childChain_len: public(uint256)
 # tokenId => Deposit
 deposits: public(map(uint256, Deposit))
@@ -126,11 +133,22 @@ def _getMerkleRoot(
 
 # Plasma functions #
 @public
-def submitBlock(blkRoot: bytes32):
+def submitBlock(txnRoot: bytes32):
     assert msg.sender == self.authority
-    self.childChain[self.childChain_len] = blkRoot
+    # NOTE: Publishing chainId here synchronizes the Plasma chain
+    #       with the root chain at the moment of block submission.
+    #       This is important because it ensures that chainId can-
+    #       not be mixed between transactions in a block, aligning
+    #       all uses of the domain separator for the Plasma txns
+    #       together. Failure to align these parameters would have
+    #       unintended consequences.
+    self.childChain[self.childChain_len] = Block({
+        txnRoot: txnRoot,
+        number: self.childChain_len,
+        chainId: tx.chain_id,
+    })
+    log.BlockPublished(txnRoot, self.childChain_len, chainId)
     self.childChain_len += 1
-    log.BlockPublished(blkRoot)
 
 
 @public
