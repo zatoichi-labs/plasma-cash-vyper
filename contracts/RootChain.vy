@@ -204,7 +204,7 @@ def onERC721Received(
     operator: address,
     _from: address,
     _tokenId: uint256,
-    _data: bytes[149],  # Transaction struct is 149 bytes in size
+    _data: bytes[161],  # Transaction struct is 161 bytes in size
 ) -> bytes32:
     # TODO: Add once #1406 implemented
     #assert operator == self.authority or operator == _from
