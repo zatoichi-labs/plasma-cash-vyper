@@ -93,7 +93,7 @@ class Transaction:
     def to_tuple(self):
         """ This is how we pass a struct through eth-abi for interacting with L1 """
         assert self.signature is not None, "Transaction is not signed!"
-        return (self.prevBlkNum, self.tokenId, self.newOwner, *self.signature)
+        return (self.newOwner, self.tokenId, self.prevBlkNum, *self.signature)
 
     @property
     def to_bytes(self):

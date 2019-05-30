@@ -4,9 +4,9 @@ struct Deposit:
     depositBlk: uint256
 
 struct Transaction:
-    prevBlkNum: uint256
-    tokenId: uint256
     newOwner: address
+    tokenId: uint256
+    prevBlkNum: uint256
     sigV: uint256
     sigR: uint256
     sigS: uint256
@@ -40,9 +40,9 @@ BlockPublished: event({
 
 # Deposit Events
 DepositAdded: event({  # struct Transaction
-        prevBlkNum: uint256,
-        tokenId: uint256,
         newOwner: address,
+        tokenId: uint256,
+        prevBlkNum: uint256,
         sigV: uint256,
         sigR: uint256,
         sigS: uint256,
@@ -145,14 +145,14 @@ def _getTransactionHash(txn: Transaction) -> bytes32:
             self                       # EIP712 Domain: verifyingContract
         ))
     unsignedMsgHash: bytes32 = keccak256(abi.encode(
+            keccak256("Transaction(newOwner address,tokenId uint256,prevBlkNum uint256)"),
             txn.newOwner,
             txn.tokenId,
             txn.prevBlkNum
         ))
     return keccak256(abi.encode(
-            b"\x01",
+            b"\x19\x01",
             domainSeparatorHash,
-            keccak256("Transaction(newOwner address,tokenId uint256,prevBlkNum uint256)"),
             unsignedMsgHash,
         ))
 
@@ -190,9 +190,9 @@ def deposit(
 
     # NOTE: This will signal to the Plasma Operator to
     #       accept the deposit into the Child Chain
-    log.DepositAdded(_txn.prevBlkNum,
+    log.DepositAdded(_txn.newOwner,
                      _txn.tokenId,
-                     _txn.newOwner,
+                     _txn.prevBlkNum,
                      _txn.sigV,
                      _txn.sigR,
                      _txn.sigS)
