@@ -31,7 +31,7 @@ class TokenToTxnHashIdSMT(SparseMerkleTree):
         return super().branch(to_bytes32(token_uid))
 
     def set(self, token_uid: int, txn: Transaction) -> Set[Hash32]:
-        return super().set(to_bytes32(token_uid), txn.hash)
+        return super().set(to_bytes32(token_uid), txn.msg_hash)
 
     def exists(self, token_uid: int) -> bool:
         return super().exists(to_bytes32(token_uid))
@@ -123,8 +123,8 @@ class Operator:
         if not self.is_tracking(transaction.tokenId):
             print("Not Tracking!")
             return False
-        # Holder of token didn't sign
-        if self.deposits[transaction.tokenId].newOwner != transaction.sender:
+        # Holder of token didn't sign it
+        if self.deposits[transaction.tokenId].newOwner != transaction.signer:
             print("Not signed by current holder!")
             return False
         # NOTE This allows multiple transactions in a single block

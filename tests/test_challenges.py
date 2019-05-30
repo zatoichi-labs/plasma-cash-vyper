@@ -248,7 +248,6 @@ def test_challengeBefore_validHistory(w3, mine, operator, rootchain_contract, us
     assert log.args.tokenId == token.uid
 
     # But history is real, so you respond and remove the challenge
-    print(token.history[0].newOwner, token.history[1].sender)
     logger = rootchain_contract.events.ChallengeCancelled.createFilter(fromBlock=w3.eth.blockNumber)
     rootchain_contract.functions.respondChallenge(
             token.history[1].to_tuple,
