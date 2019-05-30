@@ -137,16 +137,16 @@ def test_challengeBefore_invalidHistory(w3, mine, operator, rootchain_contract, 
 
     # u2 makes a fake copy of u1's token deposited to themselves
     prevBlkNum = token.history[-1].prevBlkNum
-    unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token.uid, u2.address)
-    signature = u2._acct.signHash(unsigned_txn_hash)
     invalid_transaction = Transaction(
+                w3.eth.chainId,
+                rootchain_contract.address,
                 prevBlkNum,
                 token.uid,
                 u2.address,
-                signature['v'],
-                signature['r'],
-                signature['s'],
             )
+    signature = u2._acct.sign_message(invalid_transaction.msg)
+    invalid_transaction.add_signature((signature.v, signature.r, signature.s))
+
     operator.deposits[token.uid] = invalid_transaction  # operator colludes
 
     fake_token = Token(token.uid, status=token.status, history=[invalid_transaction])
