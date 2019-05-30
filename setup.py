@@ -6,10 +6,8 @@ from setuptools import setup, find_packages
 extras_require = {
     'test': [
         "pytest>=4.0.0",
-        "pytest-ethereum>=0.1.3a4",
         "pytest-xdist",
-        "eth-tester",
-        "tox>=2.6.0,<3",
+        "eth-tester[py-evm]>=0.1.0b39",
         "hypothesis==3.7.0",
     ],
     'lint': [
@@ -40,12 +38,11 @@ setup(
     py_modules=['plasma_cash'],
     python_requires='>=3.5.3,<4',
     install_requires=[
+        "eth-account>=0.4.0",
         "eth-utils>=1.3.0,<2.0.0",
-        "web3>=5.0.0a7",
-        "vyper>=0.1.0b8",
-    ],
-    dependency_links=[
-        "https://github.com/ethereum/py-trie/tarball/master#egg=trie",
+        "trie>=1.4.0",
+        "web3>=5.0.0b2",
+        "vyper>=0.1.0b10",
     ],
     extras_require=extras_require,
     license="MIT",
