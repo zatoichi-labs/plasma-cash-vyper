@@ -22,7 +22,7 @@ class Transaction:
 
     def __init__(self,
             chain_id,
-            contract_address,
+            rootchain_address,
             prevBlkNum,
             tokenId,
             newOwner,
@@ -30,7 +30,7 @@ class Transaction:
             sigR=None,
             sigS=None):
         self.chain_id = chain_id
-        self.contract_address = contract_address
+        self.rootchain_address = rootchain_address
         self.newOwner = newOwner
         self.tokenId = tokenId
         self.prevBlkNum = prevBlkNum
@@ -52,7 +52,7 @@ class Transaction:
                     {"name": "name", "type": "string"},
                     {"name": "version", "type": "string"},
                     {"name": "chainId", "type": "uint256"},
-                    {"name": "verifyingContract", "type": "address"}
+                    {"name": "verifyingContract", "type": "address"},
                 ],
                 "Transaction": [
                     {"name":"newOwner", "type":"address"},
@@ -65,7 +65,7 @@ class Transaction:
                 "name": "Plasma Cash",
                 "version": "1",
                 "chainId": to_int(hexstr=self.chain_id),
-                "verifyingContract": self.contract_address
+                "verifyingContract": self.rootchain_address,
             },
             "message": {
                 "newOwner": self.newOwner,
