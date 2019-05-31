@@ -79,7 +79,7 @@ class User:
         # Create the deposit transaction for it (from user to user in current block)
         prevBlkNum = self._rootchain.functions.childChain_len().call()
         transaction = Transaction(
-                self._w3.eth.chainId,
+                to_int(hexstr=self._w3.eth.chainId),
                 self._rootchain.address,
                 prevBlkNum,
                 token_uid,
@@ -118,7 +118,7 @@ class User:
         # TODO Handle ETH transfer
         prevBlkNum = self._rootchain.functions.childChain_len().call()
         transaction = Transaction(
-                self._w3.eth.chainId,
+                to_int(hexstr=self._w3.eth.chainId),
                 self._rootchain.address,
                 prevBlkNum,
                 token_uid,

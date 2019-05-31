@@ -64,7 +64,7 @@ class Transaction:
             "domain": {
                 "name": "Plasma Cash",
                 "version": "1",
-                "chainId": to_int(hexstr=self.chain_id),
+                "chainId": self.chain_id,
                 "verifyingContract": self.rootchain_address,
             },
             "message": {

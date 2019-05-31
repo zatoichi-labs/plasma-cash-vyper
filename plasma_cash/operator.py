@@ -4,7 +4,7 @@ from trie.smt import SparseMerkleTree
 
 from eth_typing import AnyAddress, ChecksumAddress, Hash32
 from eth_account import Account
-from eth_utils import to_bytes
+from eth_utils import to_bytes, to_int
 
 from web3 import Web3
 from web3.middleware.signing import construct_sign_and_send_raw_middleware
@@ -100,7 +100,7 @@ class Operator:
     def addDeposit(self, log):
         if not self.is_tracking(log.args['tokenId']):
             self.pending_deposits[log.args['tokenId']] = Transaction(
-                    self._w3.eth.chainId,
+                    to_int(hexstr=self._w3.eth.chainId),
                     self._rootchain.address,
                     **log.args,
                 )
