@@ -1,6 +1,6 @@
 from eth_abi import encode_single
 from eth_account import Account
-from eth_account.messages import encode_structured_data, hash_eip712_message
+from eth_account.messages import encode_structured_data, _hash_eip191_message
 from eth_utils import keccak, to_checksum_address, to_int
 
 
@@ -81,7 +81,7 @@ class Transaction:
 
     @property
     def msg_hash(self):
-        return hash_eip712_message(self.struct)
+        return _hash_eip191_message(self.msg)
 
     @property
     def signer(self):
