@@ -4,9 +4,9 @@ struct Deposit:
     depositBlk: uint256
 
 struct Transaction:
-    prevBlkNum: uint256
-    tokenId: uint256
     newOwner: address
+    tokenId: uint256
+    prevBlkNum: uint256
     sigV: uint256
     sigR: uint256
     sigS: uint256
@@ -40,9 +40,9 @@ BlockPublished: event({
 
 # Deposit Events
 DepositAdded: event({  # struct Transaction
-        prevBlkNum: uint256,
-        tokenId: uint256,
         newOwner: address,
+        tokenId: uint256,
+        prevBlkNum: uint256,
         sigV: uint256,
         sigR: uint256,
         sigS: uint256,
@@ -80,19 +80,27 @@ ChallengeCancelled: event({
 # Storage
 authority: address
 token: public(ERC721)
-# Simulates stack data structure
+
+# TxnBlkNum => BlkHash
+# (Simulates stack data structure)
 childChain: public(map(uint256, bytes32))
 childChain_len: public(uint256)
-# tokenId => Deposit
+
+# TokenId => Deposit
 deposits: public(map(uint256, Deposit))
-# tokenId => Exit (only one exit per tokenId allowed)
+
+# TokenId => Exit (only one exit per tokenId allowed)
 exits: map(uint256, Exit)
-# tokenId => txnBlkNum => Challenge (multiple challenges allowed)
+
+# TokenId => TxnBlkNum => Challenge
+# (multiple challenges allowed, but only one per block)
 challenges: map(uint256, map(uint256, Challenge))
 
 
 # Constants
 CHALLENGE_PERIOD: constant(timedelta) = 604800  # 7 days (7*24*60*60 secs)
+CHAIN_ID: constant(uint256) = 61  # Must set dyanamically for chain being deployed to
+# NOTE: CHAIN_ID must be monkeypatched for testing/testnets
 
 
 # Constructor
@@ -123,6 +131,31 @@ def _getMerkleRoot(
         targetBit = shift(targetBit, 1)
     return nodeHash
 
+@constant
+@public
+def _getTransactionHash(txn: Transaction) -> bytes32:
+    # TODO: Use Vyper API from #1020 for this instead of concat/convert
+    domainSeparator: bytes32 = keccak256(concat(#abi.encode(
+            keccak256(
+                "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+            ),
+            keccak256("Plasma Cash"),  # EIP712 Domain: name
+            keccak256("1"),            # EIP712 Domain: version
+            convert(CHAIN_ID, bytes32),                  # EIP712 Domain: chainId (TODO: use EIP-1344)
+            convert(self, bytes32)                       # EIP712 Domain: verifyingContract
+        ))
+    messageHash: bytes32 = keccak256(concat(#abi.encode(
+            keccak256("Transaction(address newOwner,uint256 tokenId,uint256 prevBlkNum)"),
+            convert(txn.newOwner, bytes32),
+            convert(txn.tokenId, bytes32),
+            convert(txn.prevBlkNum, bytes32)
+        ))
+    return keccak256(concat(#abi.encode(
+            b"\x19\x01",
+            domainSeparator,
+            messageHash,
+        ))
+
 
 # Plasma functions #
 @public
@@ -134,38 +167,35 @@ def submitBlock(blkRoot: bytes32):
 
 
 @public
-def deposit(txn: Transaction):
+def deposit(
+    _from: address,
+    _txn: Transaction
+):
     # Verify block number is current block
-    assert self.childChain_len == txn.prevBlkNum
+    assert self.childChain_len == _txn.prevBlkNum
 
     # Verify this transaction was signed by message sender
-    unsignedTxnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                )
-            )
-    assert msg.sender == ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
+    txnHash: bytes32 = self._getTransactionHash(_txn)
+    assert _from == ecrecover(txnHash, _txn.sigV, _txn.sigR, _txn.sigS)
 
     # Transfer the token to this contract (also verifies custody)
-    self.token.safeTransferFrom(msg.sender, self, txn.tokenId)
+    self.token.safeTransferFrom(_from, self, _txn.tokenId)
 
     # Allow recipient of deposit to withdraw the token
     # (No other spends can happen until confirmed)
-    self.deposits[txn.tokenId] = Deposit({
-        depositor: txn.newOwner,
-        depositBlk: txn.prevBlkNum,
+    self.deposits[_txn.tokenId] = Deposit({
+        depositor: _txn.newOwner,
+        depositBlk: _txn.prevBlkNum,
     })
 
     # NOTE: This will signal to the Plasma Operator to
     #       accept the deposit into the Child Chain
-    log.DepositAdded(txn.prevBlkNum,
-                     txn.tokenId,
-                     txn.newOwner,
-                     txn.sigV,
-                     txn.sigR,
-                     txn.sigS)
+    log.DepositAdded(_txn.newOwner,
+                     _txn.tokenId,
+                     _txn.prevBlkNum,
+                     _txn.sigV,
+                     _txn.sigR,
+                     _txn.sigS)
 
 
 # This will be the callback that token.safeTransferFrom() executes
@@ -174,8 +204,13 @@ def onERC721Received(
     operator: address,
     _from: address,
     _tokenId: uint256,
-    _data: bytes[1024],
+    _data: bytes[161],  # Transaction struct is 161 bytes in size
 ) -> bytes32:
+    # TODO: Add once #1406 implemented
+    #assert operator == self.authority or operator == _from
+    #txn: Transaction = abi.decode(_data, [Transaction])
+    #assert _tokenId == txn.tokenId
+    #self.deposit(_from, txn)
     # We must return the method_id of this function so safeTransferFrom works
     return method_id(
             "onERC721Received(address,address,uint256,bytes)", bytes32
@@ -207,43 +242,18 @@ def startExit(
     assert txn.newOwner == msg.sender
 
     # Compute transaction hash (leaf of Merkle tree)
-    txnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                    convert(txn.sigV, bytes32),
-                    convert(txn.sigR, bytes32),
-                    convert(txn.sigS, bytes32),
-                )
-            )
+    txnHash: bytes32 = self._getTransactionHash(txn)
 
     # Validate inclusion of txn in merkle root prior to exit
     assert self.childChain[txn.prevBlkNum] == \
         self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Validate signer of txn was the receiver of prevTxn
-    unsignedTxnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                )
-            )
-    txn_signer: address = ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
+    txn_signer: address = ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
     assert prevTxn.newOwner == txn_signer
 
     # Compute transaction hash (leaf of Merkle tree)
-    prevTxnHash: bytes32 = keccak256(
-            concat(
-                    convert(prevTxn.prevBlkNum, bytes32),
-                    convert(prevTxn.tokenId,    bytes32),
-                    convert(prevTxn.newOwner,   bytes32),
-                    convert(prevTxn.sigV, bytes32),
-                    convert(prevTxn.sigR, bytes32),
-                    convert(prevTxn.sigS, bytes32),
-                )
-            )
+    prevTxnHash: bytes32 = self._getTransactionHash(prevTxn)
 
     # Validate inclusion of prevTxn in merkle root prior to txn
     assert self.childChain[prevTxn.prevBlkNum] == \
@@ -279,30 +289,14 @@ def challengeExit(
     assert self.exits[txn.tokenId].txn.tokenId == txn.tokenId
 
     # Compute transaction hash (leaf of Merkle tree)
-    txnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                    convert(txn.sigV, bytes32),
-                    convert(txn.sigR, bytes32),
-                    convert(txn.sigS, bytes32),
-                )
-            )
+    txnHash: bytes32 = self._getTransactionHash(txn)
 
     # Validate inclusion of txn in merkle root at challenge
     assert self.childChain[txnBlkNum] == \
         self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Get signer of challenge txn
-    unsignedTxnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                )
-            )
-    txn_signer: address = ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
+    txn_signer: address = ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
 
     # Challenge transaction was spent after the exit
     challengeAfter: bool = \
@@ -358,16 +352,7 @@ def respondChallenge(
     assert challenge.txn.prevBlkNum < txn.prevBlkNum
 
     # Compute transaction hash (leaf of Merkle tree)
-    txnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                    convert(txn.sigV, bytes32),
-                    convert(txn.sigR, bytes32),
-                    convert(txn.sigS, bytes32),
-                )
-            )
+    txnHash: bytes32 = self._getTransactionHash(txn)
 
     # Validate inclusion of txn in merkle root at response
     # NOTE txn_prevBlkNum may need to be txnBlkNum, not sure yet!
@@ -375,14 +360,7 @@ def respondChallenge(
         self._getMerkleRoot(txn.tokenId, txnHash, txnProof)
 
     # Get signer of response txn
-    unsignedTxnHash: bytes32 = keccak256(
-            concat(
-                    convert(txn.prevBlkNum, bytes32),
-                    convert(txn.tokenId,    bytes32),
-                    convert(txn.newOwner,   bytes32),
-                )
-            )
-    txn_signer: address = ecrecover(unsignedTxnHash, txn.sigV, txn.sigR, txn.sigS)
+    txn_signer: address = ecrecover(txnHash, txn.sigV, txn.sigR, txn.sigS)
 
     # Validate signer of response txn is the recipient of the challenge txn
     # NOTE txnBlkNum may need to be txn_prevBlkNum, not sure yet!

@@ -4,7 +4,7 @@ from trie.smt import SparseMerkleTree
 
 from eth_typing import AnyAddress, ChecksumAddress, Hash32
 from eth_account import Account
-from eth_utils import to_bytes
+from eth_utils import to_bytes, to_int
 
 from web3 import Web3
 from web3.middleware.signing import construct_sign_and_send_raw_middleware
@@ -31,7 +31,7 @@ class TokenToTxnHashIdSMT(SparseMerkleTree):
         return super().branch(to_bytes32(token_uid))
 
     def set(self, token_uid: int, txn: Transaction) -> Set[Hash32]:
-        return super().set(to_bytes32(token_uid), txn.hash)
+        return super().set(to_bytes32(token_uid), txn.msg_hash)
 
     def exists(self, token_uid: int) -> bool:
         return super().exists(to_bytes32(token_uid))
@@ -45,7 +45,7 @@ class Operator:
                  private_key: bytes):
         self._w3 = w3
         self._rootchain = self._w3.eth.contract(rootchain_address, **rootchain_interface)
-        self._acct = Account.privateKeyToAccount(private_key)
+        self._acct = Account.from_key(private_key)
         # Allow web3 to autosign with account
         middleware = construct_sign_and_send_raw_middleware(private_key)
         self._w3.middleware_onion.add(middleware)
@@ -99,7 +99,11 @@ class Operator:
 
     def addDeposit(self, log):
         if not self.is_tracking(log.args['tokenId']):
-            self.pending_deposits[log.args['tokenId']] = Transaction(**log.args)
+            self.pending_deposits[log.args['tokenId']] = Transaction(
+                    to_int(hexstr=self._w3.eth.chainId),
+                    self._rootchain.address,
+                    **log.args,
+                )
 
     def remDeposit(self, log):
         if log.args['tokenId'] in self.pending_deposits.keys():
@@ -123,8 +127,8 @@ class Operator:
         if not self.is_tracking(transaction.tokenId):
             print("Not Tracking!")
             return False
-        # Holder of token didn't sign
-        if self.deposits[transaction.tokenId].newOwner != transaction.sender:
+        # Holder of token didn't sign it
+        if self.deposits[transaction.tokenId].newOwner != transaction.signer:
             print("Not signed by current holder!")
             return False
         # NOTE This allows multiple transactions in a single block

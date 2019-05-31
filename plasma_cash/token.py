@@ -49,7 +49,7 @@ class Token:
         for txn in self.history[self.history_depth_checked+1:]:
             if txn.tokenId != prior_txn.tokenId:
                 return False
-            if txn.sender != prior_txn.newOwner:
+            if txn.signer != prior_txn.newOwner:
                 return False
             if txn.prevBlkNum < prior_txn.prevBlkNum:
                 return False

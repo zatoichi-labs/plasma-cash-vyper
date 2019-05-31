@@ -35,7 +35,7 @@ class User:
         self._token = self._w3.eth.contract(token_address, **token_interface)
         self._rootchain = self._w3.eth.contract(rootchain_address, **rootchain_interface)
         self._operator = operator
-        self._acct = Account.privateKeyToAccount(private_key)
+        self._acct = Account.from_key(private_key)
         # Allow web3 to autosign with account
         middleware = construct_sign_and_send_raw_middleware(private_key)
         self._w3.middleware_onion.add(middleware)
@@ -78,20 +78,20 @@ class User:
 
         # Create the deposit transaction for it (from user to user in current block)
         prevBlkNum = self._rootchain.functions.childChain_len().call()
-        unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token_uid, self.address)
-        signature = self._acct.signHash(unsigned_txn_hash)
         transaction = Transaction(
+                to_int(hexstr=self._w3.eth.chainId),
+                self._rootchain.address,
                 prevBlkNum,
                 token_uid,
-                self.address,
-                signature['v'],
-                signature['r'],
-                signature['s'],
+                self.address
             )
+        signed = self._acct.sign_message(transaction.msg)
+        transaction.add_signature((signed.v, signed.r, signed.s))
 
         # Deposit on the rootchain
         txn_hash = self._rootchain.functions.deposit(
-            transaction.to_tuple
+            self.address,
+            transaction.to_tuple,
         ).transact({'from': self.address})
         self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
@@ -117,16 +117,15 @@ class User:
         token = next((t for t in self.purse if t.uid == token_uid), None)
         # TODO Handle ETH transfer
         prevBlkNum = self._rootchain.functions.childChain_len().call()
-        unsigned_txn_hash = Transaction.unsigned_txn_hash(prevBlkNum, token_uid, user_address)
-        signature = self._acct.signHash(unsigned_txn_hash)
         transaction = Transaction(
+                to_int(hexstr=self._w3.eth.chainId),
+                self._rootchain.address,
                 prevBlkNum,
                 token_uid,
-                user_address,
-                signature['v'],
-                signature['r'],
-                signature['s'],
+                user_address
             )
+        signed = self._acct.sign_message(transaction.msg)
+        transaction.add_signature((signed.v, signed.r, signed.s))
         token.addTransaction(transaction)  # Not needed with messaging
         # Block until user approces our transfer
         # TODO Make this async
