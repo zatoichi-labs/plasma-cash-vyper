@@ -135,7 +135,7 @@ def _getMerkleRoot(
 @public
 def _getTransactionHash(txn: Transaction) -> bytes32:
     # TODO: Use Vyper API from #1020 for this
-    domainSeparatorHash: bytes32 = keccak256(abi.encode(
+    domainSeparator: bytes32 = keccak256(abi.encode(
             keccak256(
                 "EIP712Domain(name string,version string,chainId uint256,verifyingContract address)"
             ),
@@ -144,7 +144,7 @@ def _getTransactionHash(txn: Transaction) -> bytes32:
             CHAIN_ID,                  # EIP712 Domain: chainId (TODO: use EIP-1344)
             self                       # EIP712 Domain: verifyingContract
         ))
-    unsignedMsgHash: bytes32 = keccak256(abi.encode(
+    messageHash: bytes32 = keccak256(abi.encode(
             keccak256("Transaction(newOwner address,tokenId uint256,prevBlkNum uint256)"),
             txn.newOwner,
             txn.tokenId,
@@ -152,8 +152,8 @@ def _getTransactionHash(txn: Transaction) -> bytes32:
         ))
     return keccak256(abi.encode(
             b"\x19\x01",
-            domainSeparatorHash,
-            unsignedMsgHash,
+            domainSeparator,
+            messageHash,
         ))
 
 
