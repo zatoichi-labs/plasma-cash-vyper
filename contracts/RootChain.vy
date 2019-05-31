@@ -137,7 +137,7 @@ def _getTransactionHash(txn: Transaction) -> bytes32:
     # TODO: Use Vyper API from #1020 for this
     domainSeparator: bytes32 = keccak256(abi.encode(
             keccak256(
-                "EIP712Domain(name string,version string,chainId uint256,verifyingContract address)"
+                "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
             ),
             keccak256("Plasma Cash"),  # EIP712 Domain: name
             keccak256("1"),            # EIP712 Domain: version
@@ -145,7 +145,7 @@ def _getTransactionHash(txn: Transaction) -> bytes32:
             self                       # EIP712 Domain: verifyingContract
         ))
     messageHash: bytes32 = keccak256(abi.encode(
-            keccak256("Transaction(newOwner address,tokenId uint256,prevBlkNum uint256)"),
+            keccak256("Transaction(address newOwner,uint256 tokenId,uint256 prevBlkNum)"),
             txn.newOwner,
             txn.tokenId,
             txn.prevBlkNum
