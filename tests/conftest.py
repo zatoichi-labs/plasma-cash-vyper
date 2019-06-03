@@ -40,8 +40,11 @@ with open('contracts/RootChain.vy', 'r') as f:
 
 # NOTE This should come for free with pytest-ethereum
 from web3 import Web3, EthereumTesterProvider
+from eth_tester.backends.pyevm import main
 @pytest.fixture
 def w3():
+    # Monkeypatch
+    main.GENESIS_GAS_LIMIT = 6283184 # FIXME 2x'd this from 3141592
     return Web3(EthereumTesterProvider())
 
 # NOTE Replace with pytest-ethereum mining API
