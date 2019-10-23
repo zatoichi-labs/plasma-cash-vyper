@@ -5,13 +5,14 @@ from setuptools import setup, find_packages
 
 extras_require = {
     'test': [
-        "pytest>=4.0.0",
+        "pytest",
         "pytest-xdist",
-        "eth-tester[py-evm]>=0.1.0b39",
-        "hypothesis==3.7.0",
+        "eth-tester[py-evm]>=0.2.0b3",
+        "hypothesis",
     ],
     'lint': [
-        "flake8==3.4.1",
+        "flake8",
+        #"flake8-vyper",
     ],
     'dev': [
         "bumpversion>=0.5.3,<1",
@@ -40,10 +41,10 @@ setup(
     python_requires='>=3.5.3,<4',
     install_requires=[
         "eth-account>=0.4.0",
-        "eth-utils>=1.3.0,<2.0.0",
+        "eth-utils>=1.7.0,<2.0.0",
         "trie>=1.4.0",
-        "web3>=5.0.0b2",
-        "vyper>=0.1.0b10",
+        "web3>=5.2.2",
+        "vyper>=0.1.0b13",
     ],
     extras_require=extras_require,
     license="MIT",
