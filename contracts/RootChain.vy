@@ -112,7 +112,7 @@ def __init__(_token: address):
 
 # UTILITY FUNCTIONS #
 @constant
-@public
+@private
 def _getMerkleRoot(
     path: uint256,
     leaf: bytes32,
@@ -132,7 +132,7 @@ def _getMerkleRoot(
     return nodeHash
 
 @constant
-@public
+@private
 def _getTransactionHash(txn: Transaction) -> bytes32:
     # TODO: Use Vyper API from #1020 for this instead of concat/convert
     domainSeparator: bytes32 = keccak256(concat(#abi.encode(
