@@ -38,6 +38,16 @@ with open('contracts/RootChain.vy', 'r') as f:
         )
 
 
+def pytest_addoption(parser):
+    parser.addoption('--slow', action='store_true', dest="slow",
+                 default=False, help="enable `slow` decorated tests")
+
+
+def pytest_configure(config):
+    if not config.option.slow:
+        setattr(config.option, 'markexpr', 'not slow')
+
+
 # NOTE This should come for free with pytest-ethereum
 from web3 import Web3, EthereumTesterProvider
 from eth_tester.backends.pyevm import main
