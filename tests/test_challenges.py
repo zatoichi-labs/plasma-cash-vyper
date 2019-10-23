@@ -1,8 +1,6 @@
 # Test 3 challenge types in Plasma Cash design
 import pytest
 
-from eth_utils import to_int
-
 from plasma_cash import (
     Token,
     Transaction,
@@ -138,7 +136,7 @@ def test_challengeBefore_invalidHistory(w3, mine, operator, rootchain_contract, 
     # u2 makes a fake copy of u1's token deposited to themselves
     prevBlkNum = token.history[-1].prevBlkNum
     invalid_transaction = Transaction(
-                to_int(hexstr=w3.eth.chainId),
+                w3.eth.chainId,
                 rootchain_contract.address,
                 prevBlkNum,
                 token.uid,

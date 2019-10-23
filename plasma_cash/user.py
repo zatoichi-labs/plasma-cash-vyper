@@ -2,7 +2,6 @@ from typing import Set
 
 from eth_typing import AnyAddress, ChecksumAddress
 from eth_account import Account
-from eth_utils import to_int
 
 from trie.smt import calc_root
 
@@ -79,7 +78,7 @@ class User:
         # Create the deposit transaction for it (from user to user in current block)
         prevBlkNum = self._rootchain.functions.childChain_len().call()
         transaction = Transaction(
-                to_int(hexstr=self._w3.eth.chainId),
+                self._w3.eth.chainId,
                 self._rootchain.address,
                 prevBlkNum,
                 token_uid,
@@ -118,7 +117,7 @@ class User:
         # TODO Handle ETH transfer
         prevBlkNum = self._rootchain.functions.childChain_len().call()
         transaction = Transaction(
-                to_int(hexstr=self._w3.eth.chainId),
+                self._w3.eth.chainId,
                 self._rootchain.address,
                 prevBlkNum,
                 token_uid,
