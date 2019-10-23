@@ -119,7 +119,7 @@ def _getMerkleRoot(
     proof: bytes32[256]
 ) -> bytes32:
     targetBit: uint256 = 1  # traverse path in LSB:leaf->MSB:root order
-    proofElement: bytes32
+    proofElement: bytes32 = proof[255]
     nodeHash: bytes32 = keccak256(leaf)  # First node is hash of leaf
     for i in range(256):
         # proof is in root->leaf order, so iterate in reverse
