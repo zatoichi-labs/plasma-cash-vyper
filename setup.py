@@ -7,7 +7,7 @@ extras_require = {
     'test': [
         "pytest",
         "pytest-xdist",
-        "eth-tester[py-evm]>=0.2.0b3",
+        "eth-tester[py-evm]>=0.3.0b1",
         "hypothesis",
     ],
     'lint': [
