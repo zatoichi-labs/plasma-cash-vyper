@@ -7,6 +7,7 @@ struct Transaction:
     newOwner: address
     tokenId: uint256
     prevBlkNum: uint256
+    # Signature parameters encoded alongside Txn for space efficiency
     sigV: uint256
     sigR: uint256
     sigS: uint256

@@ -38,11 +38,13 @@ with open('contracts/RootChain.vy', 'r') as f:
         )
 
 
+# Skip Hypothesis tests by default
 def pytest_addoption(parser):
     parser.addoption('--slow', action='store_true', dest="slow",
                  default=False, help="enable `slow` decorated tests")
 
 
+# Skip Hypothesis tests by default
 def pytest_configure(config):
     if not config.option.slow:
         setattr(config.option, 'markexpr', 'not slow')
@@ -67,7 +69,7 @@ def mine(w3):
 
 @pytest.fixture
 def token_contract(w3):
-    # NOTE Operator "deploys" this contract
+    # NOTE Operator "deploys" this contract (for testing)
     txn_hash = w3.eth.contract(**token_interface).constructor().transact()
     address = w3.eth.waitForTransactionReceipt(txn_hash)['contractAddress']
     return w3.eth.contract(address, **token_interface)
@@ -75,7 +77,7 @@ def token_contract(w3):
 
 @pytest.fixture
 def rootchain_contract(w3, token_contract):
-    # NOTE Operator "deploys" this contract
+    # NOTE Operator "deploys" this contract (for testing)
     txn_hash = w3.eth.contract(**rootchain_interface).constructor(token_contract.address).transact()
     address = w3.eth.waitForTransactionReceipt(txn_hash)['contractAddress']
     return w3.eth.contract(address, **rootchain_interface)
