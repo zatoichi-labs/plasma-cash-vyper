@@ -63,6 +63,7 @@ class User:
     def deposit(self, token_uid):
         # Get the actual token in our purse
         token = next((t for t in self.purse if t.uid == token_uid), None)
+        assert token, "Token not in wallet!"
 
         # Allow the rootchain to pull all our deposits using safeTransferFrom
         if not self._token.functions.isApprovedForAll(
@@ -114,6 +115,8 @@ class User:
     def transfer(self, user_address, token_uid):
         # NOTE Use user's address instead of object with messaging
         token = next((t for t in self.purse if t.uid == token_uid), None)
+        assert token, "Token not in wallet!"
+
         # TODO Handle ETH transfer
         prevBlkNum = self._rootchain.functions.childChain_len().call()
         transaction = Transaction(
