@@ -24,16 +24,26 @@ with open('contracts/Token.vy', 'r') as f:
 
 # Hack until pytest-ethereum includes a way to change the block timestamp
 def set_challenge_period(code, new_param):
-    c = code.replace("""
+    return code.replace("""
 CHALLENGE_PERIOD: constant(timedelta) = 604800  # 7 days (7*24*60*60 secs)
-""", """
-CHALLENGE_PERIOD: constant(timedelta) = {0}  # secs (NOTE monkeypatched!)
-""".format(new_param))
-    return c
+""", f"""
+CHALLENGE_PERIOD: constant(timedelta) = {new_param}  # secs (NOTE monkeypatched!)
+""")
+
+# Hack until Istanbul and Vyper support chainId opcode
+def set_chain_id(code, new_param):
+    return code.replace("""
+CHAIN_ID: constant(uint256) = 1  # Must set dynamically for chain being deployed to
+""", f"""
+CHAIN_ID: constant(uint256) = {new_param}  # Must set dynamically for chain being deployed to
+""")
 
 with open('contracts/RootChain.vy', 'r') as f:
+    code = f.read()
+    code = set_challenge_period(code, 1)  # Very short challenge period of 1 sec
+    code = set_chain_id(code, 61)  # web3/eth-tester default
     rootchain_interface = vyper.compile_code(
-            set_challenge_period(f.read(), 1),
+            code,
             output_formats=['abi', 'bytecode', 'bytecode_runtime']
         )
 
