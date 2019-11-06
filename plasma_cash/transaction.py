@@ -102,6 +102,6 @@ class Transaction:
         # must validate that each transaction is signed according
         # to the domain separator they are using.
         return encode_single(
-                '(uint256,uint256,address,uint256,uint256,uint256)',
+                '(address,uint256,uint256,uint256,uint256,uint256)',
                 self.to_tuple
             )
