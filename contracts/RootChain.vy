@@ -99,9 +99,16 @@ challenges: map(uint256, map(uint256, Challenge))
 
 # Constants
 CHALLENGE_PERIOD: constant(timedelta) = 604800  # 7 days (7*24*60*60 secs)
-CHAIN_ID: constant(uint256) = 61  # Must set dyanamically for chain being deployed to
+CHAIN_ID: constant(uint256) = 1  # Must set dynamically for chain being deployed to
 # NOTE: CHAIN_ID must be monkeypatched for testing/testnets
-
+DOMAIN_TYPE_HASH: constant(bytes32) = keccak256(
+    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+)
+PROTOCOL_NAME: constant(bytes32) = keccak256("Plasma Cash")
+PROTOCOL_VERSION: constant(bytes32) = keccak256("1")
+TRANSACTION_TYPE_HASH: constant(bytes32) = keccak256(
+    "Transaction(address newOwner,uint256 tokenId,uint256 prevBlkNum)"
+)
 
 # Constructor
 @public
@@ -137,16 +144,14 @@ def _getMerkleRoot(
 def _getTransactionHash(_txn: Transaction) -> bytes32:
     # TODO: Use Vyper API from #1020 for this instead of concat/convert
     domainSeparator: bytes32 = keccak256(concat(#abi.encode(
-            keccak256(
-                "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-            ),
-            keccak256("Plasma Cash"),  # EIP712 Domain: name
-            keccak256("1"),            # EIP712 Domain: version
-            convert(CHAIN_ID, bytes32),                  # EIP712 Domain: chainId (TODO: use EIP-1344)
-            convert(self, bytes32)                       # EIP712 Domain: verifyingContract
+            DOMAIN_TYPE_HASH,           # EIP712 Domain Type Identifier Hash
+            PROTOCOL_NAME,              # EIP712 Domain: name
+            PROTOCOL_VERSION,           # EIP712 Domain: version
+            convert(CHAIN_ID, bytes32), # EIP712 Domain: chainId (TODO: use EIP-1344)
+            convert(self, bytes32)      # EIP712 Domain: verifyingContract
         ))
     messageHash: bytes32 = keccak256(concat(#abi.encode(
-            keccak256("Transaction(address newOwner,uint256 tokenId,uint256 prevBlkNum)"),
+            TRANSACTION_TYPE_HASH,
             convert(_txn.newOwner, bytes32),
             convert(_txn.tokenId, bytes32),
             convert(_txn.prevBlkNum, bytes32)
