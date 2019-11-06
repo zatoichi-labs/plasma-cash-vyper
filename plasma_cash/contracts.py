@@ -1,14 +1,18 @@
-import vyper
+from pathlib import Path as _Path
+
+import vyper as _vyper
 
 
-def get_interface(contract_filename):
-    with open(contract_filename, 'r') as f:
-        interface = vyper.compile_code(
+def _get_interface(contract_filename):
+    base_path = _Path(__file__).parent
+    full_path = (base_path / '..' / contract_filename).resolve()
+    with open(full_path, 'r') as f:
+        interface = _vyper.compile_code(
                 f.read(),
                 output_formats=['abi', 'bytecode', 'bytecode_runtime']
             )
     return interface
 
 
-token_interface = get_interface('contracts/Token.vy')
-rootchain_interface = get_interface('contracts/RootChain.vy')
+token_interface = _get_interface('contracts/Token.vy')
+rootchain_interface = _get_interface('contracts/RootChain.vy')
