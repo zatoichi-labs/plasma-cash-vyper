@@ -65,6 +65,9 @@ class User:
         token = next((t for t in self.purse if t.uid == token_uid), None)
         assert token, "Token not in wallet!"
 
+        # Manual nonce management due to two potential transactions in this method
+        nonce = self._w3.eth.getTransactionCount(self.address)
+
         # Allow the rootchain to pull all our deposits using safeTransferFrom
         if not self._token.functions.isApprovedForAll(
             self.address,
@@ -73,7 +76,8 @@ class User:
             txn_hash = self._token.functions.setApprovalForAll(
                 self._rootchain.address,
                 True,
-            ).transact({'from': self.address})
+            ).transact({'from': self.address, 'nonce': nonce})
+            nonce += 1  # To ensure this transaction doesn't conflict with next
             self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
         # Create the deposit transaction for it (from user to user in current block)
@@ -92,7 +96,7 @@ class User:
         txn_hash = self._rootchain.functions.deposit(
             self.address,
             transaction.to_tuple,
-        ).transact({'from': self.address})
+        ).transact({'from': self.address, 'nonce': nonce})
         self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
         # Also log when we deposited it and add the deposit to our history
