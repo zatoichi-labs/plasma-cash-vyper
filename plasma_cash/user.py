@@ -81,16 +81,17 @@ class User:
             self._w3.eth.waitForTransactionReceipt(txn_hash)  # FIXME Shouldn't have to wait
 
         # Create the deposit transaction for it (from user to user in current block)
-        prevBlkNum = self._rootchain.functions.childChain_len().call()
         transaction = Transaction(
                 self._w3.eth.chainId,
                 self._rootchain.address,
-                prevBlkNum,
+                self._rootchain.functions.childChain_len().call(),
                 token_uid,
-                self.address
+                self.address,  # Send to self for deposit
             )
-        signed = self._acct.sign_message(transaction.msg)
-        transaction.add_signature((signed.v, signed.r, signed.s))
+        # TODO: Use eth_signTypedData method when eth-tester supports it
+        signature = self._acct.sign_message(transaction.msg)
+        signature = (signature.v, signature.r, signature.s)
+        transaction.add_signature(signature)
 
         # Deposit on the rootchain
         txn_hash = self._rootchain.functions.deposit(
@@ -122,16 +123,17 @@ class User:
         assert token, "Token not in wallet!"
 
         # TODO Handle ETH transfer
-        prevBlkNum = self._rootchain.functions.childChain_len().call()
         transaction = Transaction(
                 self._w3.eth.chainId,
                 self._rootchain.address,
-                prevBlkNum,
+                self._rootchain.functions.childChain_len().call(),
                 token_uid,
                 user_address
             )
-        signed = self._acct.sign_message(transaction.msg)
-        transaction.add_signature((signed.v, signed.r, signed.s))
+        # TODO: Use eth_signTypedData method when eth-tester supports it
+        signature = self._acct.sign_message(transaction.msg)
+        signature = (signature.v, signature.r, signature.s)
+        transaction.add_signature(signature)
         token.addTransaction(transaction)  # Not needed with messaging
         # Block until user approces our transfer
         # TODO Make this async
