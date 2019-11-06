@@ -207,12 +207,6 @@ def onERC721Received(
     _tokenId: uint256,
     _data: bytes[161],  # Transaction struct is 161 bytes in size
 ) -> bytes32:
-    # TODO: Add once #1406 implemented
-    #assert operator == self.authority or operator == _from
-    #txn: Transaction = abi.decode(_data, [Transaction])
-    #assert _tokenId == txn.tokenId
-    #self.deposit(_from, txn)
-    # We must return the method_id of this function so safeTransferFrom works
     return method_id(
             "onERC721Received(address,address,uint256,bytes)", bytes32
         )
