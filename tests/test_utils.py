@@ -22,7 +22,6 @@ def to_bytes32(val: int) -> bytes:
     return val.to_bytes(32, byteorder='big')
 
 
-@pytest.mark.slow
 @given(
     tokenId=st.integers(min_value=0, max_value=2**256-1),
     txnHash=st.binary(min_size=32, max_size=32),

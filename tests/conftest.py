@@ -40,14 +40,14 @@ with open('contracts/RootChain.vy', 'r') as f:
 
 # Skip Hypothesis tests by default
 def pytest_addoption(parser):
-    parser.addoption('--slow', action='store_true', dest="slow",
-                 default=False, help="enable `slow` decorated tests")
+    parser.addoption('--hypothesis', action='store_true', dest="hypothesis",
+                 default=False, help="enable `hypothesis` tests")
 
 
 # Skip Hypothesis tests by default
 def pytest_configure(config):
-    if not config.option.slow:
-        setattr(config.option, 'markexpr', 'not slow')
+    if not config.option.hypothesis:
+        setattr(config.option, 'markexpr', 'not hypothesis')
 
 
 # NOTE This should come for free with pytest-ethereum
