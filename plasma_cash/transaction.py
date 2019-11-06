@@ -36,13 +36,18 @@ class Transaction:
         self.prevBlkNum = prevBlkNum
         sig = (sigV, sigR, sigS)
         if is_signature(sig):
-            self.signature = sig
-        self.signature = None
+            self._signature = sig
+        self._signature = None
+
+    @property
+    def signature(self):
+        assert self._signature is not None, "Message is not signed!"
+        return self._signature
 
     def add_signature(self, signature):
         assert is_signature(signature), "Not a valid signature!"
-        assert self.signature is None, "Message has already been signed!"
-        self.signature = signature
+        assert self._signature is None, "Message has already been signed!"
+        self._signature = signature
 
     @property
     def struct(self):
@@ -86,13 +91,11 @@ class Transaction:
     @property
     def signer(self):
         """ Get the signing account for this transaction """
-        assert self.signature is not None, "Transaction is not signed!"
         return Account.recover_message(self.msg, vrs=self.signature)
 
     @property
     def to_tuple(self):
         """ This is how we pass a struct through eth-abi for interacting with L1 """
-        assert self.signature is not None, "Transaction is not signed!"
         return (self.newOwner, self.tokenId, self.prevBlkNum, *self.signature)
 
     @property
