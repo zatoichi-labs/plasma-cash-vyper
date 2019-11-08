@@ -186,6 +186,8 @@ def deposit(
     assert _from == ecrecover(txnHash, _txn.sigV, _txn.sigR, _txn.sigS)
 
     # Transfer the token to this contract (also verifies custody)
+    # NOTE: Custody ensures no re-deposits of already deposited coins
+    # TODO: Verify this ^
     self.token.safeTransferFrom(_from, self, _txn.tokenId)
 
     # Allow recipient of deposit to withdraw the token
