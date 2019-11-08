@@ -100,7 +100,7 @@ challenges: map(uint256, map(uint256, Challenge))
 
 # Constants
 CHALLENGE_PERIOD: constant(timedelta) = 604800  # 7 days (7*24*60*60 secs)
-CHAIN_ID: constant(uint256) = 1  # Must set dynamically for chain being deployed to
+CHAIN_ID: constant(uint256) = 1337  # Must set dynamically for chain being deployed to
 # NOTE: CHAIN_ID must be monkeypatched for testing/testnets
 DOMAIN_TYPE_HASH: constant(bytes32) = keccak256(
     "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"

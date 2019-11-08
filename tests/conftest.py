@@ -33,7 +33,7 @@ CHALLENGE_PERIOD: constant(timedelta) = {new_param}  # secs (NOTE monkeypatched!
 # Hack until Istanbul and Vyper support chainId opcode
 def set_chain_id(code, new_param):
     return code.replace("""
-CHAIN_ID: constant(uint256) = 1  # Must set dynamically for chain being deployed to
+CHAIN_ID: constant(uint256) = 1337  # Must set dynamically for chain being deployed to
 """, f"""
 CHAIN_ID: constant(uint256) = {new_param}  # Must set dynamically for chain being deployed to
 """)
